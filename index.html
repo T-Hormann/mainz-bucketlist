@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#b3203c">
+<title>Mainz Bucket List</title>
+<style>
+:root{
+  --red:#b3203c; --red-dark:#8e1830;
+  --bg:#f6f4f1; --card:#ffffff; --text:#1c1b1a; --muted:#8a857e;
+  --line:#e9e5e0; --green:#2e9e5b;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+header{
+  background:linear-gradient(135deg,var(--red),var(--red-dark));
+  color:#fff; padding:calc(14px + env(safe-area-inset-top)) 18px 14px;
+  position:sticky; top:0; z-index:20;
+}
+header h1{font-size:20px; font-weight:700; letter-spacing:.2px}
+.progress-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.progress-bar{flex:1;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
+.progress-bar i{display:block;height:100%;background:#fff;border-radius:3px;transition:width .4s}
+.progress-label{font-size:12px;opacity:.9;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tabs{
+  display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;border:1px solid var(--line);background:var(--card);
+  border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;
+  color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer;
+}
+.tab small{font-weight:500;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.tab.active{background:var(--red);border-color:var(--red);color:#fff}
+.tab.active small{color:rgba(255,255,255,.8)}
+.controls{padding:8px 14px 0;display:flex;flex-direction:column;gap:8px}
+.search{
+  width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);
+  padding:10px 14px;font-size:16px;color:var(--text);outline:none;
+}
+.search::placeholder{color:var(--muted)}
+.seg{display:flex;background:#ece9e4;border-radius:10px;padding:3px}
+.seg button{
+  flex:1;border:0;background:transparent;border-radius:8px;padding:7px 0;
+  font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+}
+.seg button.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+main{padding:10px 14px 40px}
+.cat-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin:18px 2px 8px;
+}
+.cat-head h2{font-size:16px;font-weight:700}
+.cat-head span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.list{background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
+.item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-bottom:1px solid var(--line);cursor:pointer;
+}
+.item:last-child{border-bottom:0}
+.check{
+  flex:0 0 26px;height:26px;width:26px;border-radius:50%;
+  border:2px solid #cfc9c2;display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;transition:all .15s;
+}
+.item.done .check{background:var(--green);border-color:var(--green)}
+.item-body{flex:1;min-width:0}
+.item-body b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.item-body span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.item.done .item-body b{color:var(--muted);text-decoration:line-through}
+.chev{color:#cfc9c2;font-size:18px}
+.empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:14px}
+/* Detail-Sheet */
+.backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:var(--bg);border-radius:20px 20px 0 0;
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  transform:translateY(105%);transition:transform .3s cubic-bezier(.3,.7,.3,1);
+  padding:10px 18px calc(24px + env(safe-area-inset-bottom));
+}
+.sheet.open{transform:translateY(0)}
+.grip{width:38px;height:4px;border-radius:2px;background:#d5d0c9;margin:4px auto 14px}
+.badge{
+  display:inline-block;font-size:12px;font-weight:600;color:var(--red);
+  background:rgba(179,32,60,.1);border-radius:999px;padding:4px 10px;margin-bottom:8px;
+}
+.sheet h2{font-size:22px;font-weight:700;line-height:1.25}
+.sheet p.desc{font-size:15px;line-height:1.5;color:#444;margin:10px 0 4px}
+.sheet p.addr{font-size:13.5px;color:var(--muted);margin:6px 0 14px}
+.map{
+  width:100%;height:240px;border:0;border-radius:14px;background:#e6e2dc;display:block;
+}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+.btn{
+  flex:1;border:0;border-radius:13px;padding:14px 10px;font-size:15px;font-weight:700;
+  cursor:pointer;text-align:center;text-decoration:none;display:block;
+}
+.btn.check-btn{background:var(--card);border:1.5px solid var(--line);color:var(--text)}
+.btn.check-btn.done{background:var(--green);border-color:var(--green);color:#fff}
+.btn.maps{background:var(--red);color:#fff}
+footer{padding:24px 18px 40px;text-align:center}
+footer button{
+  border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍷 Mainz Bucket List</h1>
+  <div class="progress-row">
+    <div class="progress-bar"><i id="totalbar"></i></div>
+    <div class="progress-label" id="totallabel"></div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs"></nav>
+
+<div class="controls">
+  <input class="search" id="search" type="search" placeholder="Suchen…">
+  <div class="seg" id="seg">
+    <button data-f="alle" class="active">Alle</button>
+    <button data-f="offen">Offen</button>
+    <button data-f="done">Erledigt</button>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer>
+  <button id="backup">Fortschritt sichern / übertragen</button>
+</footer>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const CATS = {
+  aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
+  kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
+  restaurant:{label:"Restaurants",emoji:"🍽️"},
+  cafe:{label:"Cafés & Eis",emoji:"☕"},
+  bar:{label:"Bars & Kneipen",emoji:"🍻"},
+  weinstube:{label:"Weinstuben",emoji:"🍷"},
+  winzer:{label:"Winzer",emoji:"🍇"}
+};
+// [Name, Kategorie, Beschreibung, Adresse]
+const RAW=[
+["Schwarzlichthelden Minigolf","aktivitaet","Indoor-Minigolf mit 18 Bahnen in einer 3D-Schwarzlicht-Graffitiwelt mitten in der Altstadt.","Holzstraße 24, 55116 Mainz"],
+["Minigolf im Volkspark","aktivitaet","Klassische Outdoor-Minigolfanlage im grünen Mainzer Volkspark.","Göttelmannstraße, 55131 Mainz"],
+["ExitZone Escape Room","aktivitaet","Escape Rooms mit mehreren Themenräumen in der FunZone Mombach.","Mombacher Straße 76a, 55122 Mainz"],
+["Exit Experience","aktivitaet","Das erste Live-Escape-Room-Game in Mainz mit verschiedenen Rätselräumen.","Dammweg 7a, 55130 Mainz"],
+["Secret Escape Game","aktivitaet","Escape-Room-Anbieter mit spannenden Missionen nahe dem Hauptbahnhof.","Alicenplatz 6, 55116 Mainz"],
+["Escape Artist Mainz-Kastel","aktivitaet","Escape Rooms für Gruppen, Teamevents und Geburtstage zwischen Mainz und Wiesbaden.","Schmalweg 50, 55252 Mainz-Kastel"],
+["LaserZone LaserTag","aktivitaet","Lasertag-Arena in der FunZone Erlebniswelt in Mainz-Mombach.","Mombacher Straße 76a, 55122 Mainz"],
+["GlowZone 4D Schwarzlicht-Minigolf","aktivitaet","Schwarzlicht-Minigolf mit 4D-Effekten im FunZone-Komplex.","Mombacher Straße 76a, 55122 Mainz"],
+["BashZone Axtwerfen","aktivitaet","Axtwerfen und Teamevents in der FunZone Erlebniswelt Mainz.","Mombacher Straße 76a, 55122 Mainz"],
+["Bowling Room Mainz","aktivitaet","Modernes Bowlingcenter mit Bar und Eventbereich in Mainz-Mombach.","Mombacher Straße 76a, 55122 Mainz"],
+["Phönixbowling","aktivitaet","Bowlingcenter mit Bahnen, Billard und Gastronomie in Mainz-Bretzenheim.","Am Schleifweg 15, 55128 Mainz"],
+["Karthalle Mainz","aktivitaet","Indoor-Kartbahn mit rund 600 Metern Strecke und Elektro-Karts in Hechtsheim.","Wilhelm-Maybach-Straße 15, 55129 Mainz"],
+["Blockwerk Boulderhalle","aktivitaet","Große Boulderhalle zum seilfreien Klettern in Mainz-Mombach.","Hauptstraße 17-19, 55120 Mainz"],
+["HAPIK Kletterhalle","aktivitaet","Fun-Kletterhalle mit bunten Kletterstationen für Familien und Gruppen.","Athener Allee 10, 55129 Mainz"],
+["DAV Kletterkiste","aktivitaet","Kletterzentrum des Deutschen Alpenvereins mit 13 Metern Wandhöhe.","Mainz-Mombach"],
+["Wiesbadener Nordwand","aktivitaet","Kletter- und Boulderhalle mit angeschlossenem Waldseilgarten in Wiesbaden.","Hagenauer Straße 49, 65203 Wiesbaden"],
+["Superfly Air Sports","aktivitaet","Großer Trampolinpark mit Freestyle-Flächen, Dodgeball und Ninja-Parcours.","Ostring 6a, 65205 Wiesbaden"],
+["Kletterwald Neroberg","aktivitaet","Hochseilgarten mit 18 Parcours in den Baumkronen auf dem Wiesbadener Hausberg.","Neroberg, 65193 Wiesbaden"],
+["Nerobergbahn","aktivitaet","Historische Wasserballast-Standseilbahn von 1888 hinauf auf den Neroberg.","Talstation Nerotal, 65193 Wiesbaden"],
+["Taubertsbergbad","aktivitaet","Hallen- und Freibad mit großer Liegewiese hinter dem Mainzer Hauptbahnhof.","Wallstraße 9, 55122 Mainz"],
+["Mombacher Schwimmbad","aktivitaet","Beliebtes Vereinsbad mit 50-Meter-Becken und Riesenrutsche.","Mainz-Mombach"],
+["Opelbad auf dem Neroberg","aktivitaet","Eines der schönsten Freibäder Deutschlands im Bauhausstil mit Panoramablick.","Neroberg 2, 65193 Wiesbaden"],
+["Kaiser-Friedrich-Therme","aktivitaet","Historisches Thermalbad von 1913 im Stil einer antiken Therme in Wiesbaden.","Langgasse 38-40, 65183 Wiesbaden"],
+["Thermalbad Aukammtal","aktivitaet","Thermalbad mit Innen- und Außenbecken und Saunalandschaft in Wiesbaden.","Leibnizstraße 7, 65191 Wiesbaden"],
+["CineStar Mainz","aktivitaet","Großes Multiplex-Kino mit aktuellen Blockbustern nahe der Altstadt.","Holzhofstraße 1, 55116 Mainz"],
+["Capitol Kino","aktivitaet","Traditionsreiches Arthouse-Kino mit Filmen auch in Originalfassung.","Neubrunnenstraße 9, 55116 Mainz"],
+["Palatin Kino","aktivitaet","Programmkino in der Innenstadt mit anspruchsvollem Filmprogramm.","Hintere Bleiche 6-8, 55116 Mainz"],
+["SUP 2Go (Stand-Up-Paddling)","aktivitaet","SUP-Board-Verleih für Touren auf dem Rhein, Boards auch als Kajak nutzbar.","Kaiser-Karl-Ring 17, 55118 Mainz"],
+["Primus-Linie Rheinschifffahrt","aktivitaet","Ausflugsschifffahrten ab Mainz, u.a. nach Rüdesheim und in den Rheingau.","Anleger Fischtorplatz, 55116 Mainz"],
+["KD Rheinschifffahrt","aktivitaet","Panorama- und Ausflugsfahrten auf dem Rhein ab dem Mainzer Rheinufer.","Anleger am Rheinufer, 55116 Mainz"],
+["Stadtführung (Mainz Tourismus)","aktivitaet","Öffentliche und thematische Stadtführungen, von Altstadttour bis Weinführung.","Markt 17, 55116 Mainz"],
+["Mewa Arena (Mainz 05)","aktivitaet","Bundesliga-Stadion von Mainz 05 – Spiel besuchen oder Stadionführung machen.","Eugen-Salomon-Straße 1, 55128 Mainz"],
+["Wildpark Gonsenheim","aktivitaet","Kostenloser Wildpark mit rund 130 Tieren und Waldspielplatz.","Mainz-Gonsenheim"],
+["Volkspark Mainz","aktivitaet","Großes Freizeitgelände mit Liegewiesen, Spielplatz, Minigolf und Parkeisenbahn.","Göttelmannstraße, 55131 Mainz"],
+["Stadtpark Mainz","aktivitaet","Historischer Landschaftspark mit Rosengarten, Flamingoweiher und Rheinblick.","Mainz-Oberstadt"],
+["Botanischer Garten","aktivitaet","Botanischer Garten der Uni Mainz mit Freiland und Gewächshäusern.","Anselm-Franz-von-Bentzel-Weg 9b, 55128 Mainz"],
+["Rheinpromenade","aktivitaet","Uferpromenade zum Spazieren, Radfahren und Sonnenuntergang-Schauen.","Adenauer-Ufer, 55116 Mainz"],
+["Rheininsel Rettbergsaue","aktivitaet","Autofreie Rheininsel mit Strandbad, per Fähre ab Wiesbaden-Biebrich.","Wiesbaden-Biebrich"],
+["Schloss & Schlosspark Biebrich","aktivitaet","Barockschloss direkt am Rheinufer mit weitläufigem Park zum Flanieren.","Rheingaustraße 140, 65203 Wiesbaden"],
+["Mainzer Dom St. Martin","kultur","Über 1000 Jahre alter romanischer Kaiserdom und Wahrzeichen der Stadt.","Markt 10, 55116 Mainz"],
+["Gutenberg-Museum (Interim)","kultur","Interims-Ausstellung mit den Gutenberg-Bibeln, während das neue Museum gebaut wird.","Reichklarastraße 1, 55116 Mainz"],
+["Landesmuseum Mainz","kultur","Eines der ältesten Museen Deutschlands – Kunst von der Römerzeit bis heute.","Große Bleiche 49-51, 55116 Mainz"],
+["Naturhistorisches Museum","kultur","Größtes naturkundliches Museum in Rheinland-Pfalz.","Reichklarastraße 10, 55116 Mainz"],
+["Museum für Antike Schifffahrt","kultur","Originale römische Schiffswracks; wegen Sanierung zeitweise geschlossen.","Neutorstraße 2b, 55116 Mainz"],
+["LEIZA – Leibniz-Zentrum für Archäologie","kultur","Archäologisches Forschungsmuseum mit moderner Ausstellung.","Ludwig-Lindenschmit-Forum 1, 55116 Mainz"],
+["Fastnachtsmuseum","kultur","Museum zur Geschichte der Mainzer Fastnacht im Proviant-Magazin.","Neue Universitätsstraße 2, 55116 Mainz"],
+["Dom- und Diözesanmuseum","kultur","Kirchliche Schatzkammer mit mittelalterlicher Kunst in den Domkreuzgängen.","Domstraße 3, 55116 Mainz"],
+["Stadthistorisches Museum","kultur","Museum zur Mainzer Stadtgeschichte auf der Zitadelle.","Zitadelle, 55131 Mainz"],
+["Kunsthalle Mainz","kultur","Ausstellungshaus für internationale Gegenwartskunst am Zollhafen.","Am Zollhafen 3-5, 55118 Mainz"],
+["Kupferberg-Museum","kultur","Sektkellerei-Museum mit historischen Kelleranlagen (Führung mit Anmeldung).","Kupferbergterrasse 17-19, 55118 Mainz"],
+["Zitadelle Mainz","kultur","Barocke Festungsanlage mit Drususstein und bestem Blick über die Stadt.","Zitadellenweg, 55131 Mainz"],
+["St. Stephan (Chagall-Fenster)","kultur","Gotische Kirche, weltberühmt für ihre leuchtend blauen Chagall-Fenster.","Kleine Weißgasse 12, 55116 Mainz"],
+["Augustinerkirche","kultur","Prachtvolle Barockkirche in der Augustinerstraße.","Augustinerstraße 34, 55116 Mainz"],
+["Christuskirche","kultur","Evangelische Kuppelkirche im Renaissance-Stil an der Kaiserstraße.","Kaiserstraße 56, 55116 Mainz"],
+["St. Christoph (Gutenberg-Gedenkstätte)","kultur","Kriegsruine und Mahnmal, zugleich Taufkirche Johannes Gutenbergs.","Christofsgasse, 55116 Mainz"],
+["Kurfürstliches Schloss","kultur","Ehemalige Residenz der Mainzer Kurfürsten am Rheinufer.","Peter-Altmeier-Allee 1, 55116 Mainz"],
+["Kirschgarten (Fachwerkviertel)","kultur","Malerischer Altstadtplatz mit historischen Fachwerkhäusern.","Kirschgarten, 55116 Mainz"],
+["Holzturm","kultur","Gotischer Turm der mittelalterlichen Stadtbefestigung.","Holzstraße, 55116 Mainz"],
+["Eisenturm","kultur","Mittelalterlicher Stadtturm, heute Kunst- und Ausstellungsort.","Rheinstraße, 55116 Mainz"],
+["Römisches Theater","kultur","Ausgrabung des größten römischen Bühnentheaters nördlich der Alpen.","Am Römischen Theater, 55116 Mainz"],
+["Isis- und Mater-Magna-Heiligtum","kultur","Römisches Heiligtum, unterirdisch begehbar in der Römerpassage.","Römerpassage 1, 55116 Mainz"],
+["Schillerplatz & Fastnachtsbrunnen","kultur","Platz mit Barockpalais und dem berühmten Fastnachtsbrunnen.","Schillerplatz, 55116 Mainz"],
+["Staatstheater Mainz","kultur","Großes Theater mit Oper, Schauspiel, Tanz und Konzerten.","Gutenbergplatz 7, 55116 Mainz"],
+["unterhaus","kultur","Renommierte Kabarett-Bühne mit Comedy, Kleinkunst und Musik.","Münsterstraße 7, 55116 Mainz"],
+["Frankfurter Hof","kultur","Kulturzentrum in der Altstadt mit Konzerten von Jazz bis Pop.","Augustinerstraße 55, 55116 Mainz"],
+["KUZ Kulturzentrum","kultur","Konzert- und Veranstaltungshaus am Rhein mit Partys und Poetry Slams.","Dagobertstraße 20b, 55116 Mainz"],
+["Museum Wiesbaden","kultur","Hessisches Landesmuseum für Kunst und Natur mit Jugendstil-Sammlung.","Friedrich-Ebert-Allee 2, 65185 Wiesbaden"],
+["Kurhaus Wiesbaden","kultur","Neoklassizistischer Prachtbau mit der berühmten Spielbank Wiesbaden.","Kurhausplatz 1, 65189 Wiesbaden"],
+["Russisch-Orthodoxe Kirche Neroberg","kultur","Goldgekrönte russische Kirche von 1855, Wahrzeichen Wiesbadens.","Neroberg, 65193 Wiesbaden"],
+["Hessisches Staatstheater Wiesbaden","kultur","Prunkvolles Mehrspartentheater neben dem Kurhaus.","Christian-Zais-Straße 3, 65189 Wiesbaden"],
+["Rheinschiffsmühle Ginsheim","kultur","Rekonstruierte historische Schiffsmühle als schwimmendes Museum.","Ginsheim-Gustavsburg"],
+["FAVORITE Restaurant","restaurant","Gourmetrestaurant mit Michelin-Stern im Favorite Parkhotel mit Blick über Mainz.","Karl-Weiser-Straße 1, 55131 Mainz"],
+["Steins Traube","restaurant","Familiengeführtes Sternerestaurant mit moderner, regional verwurzelter Küche.","Poststraße 4, 55126 Mainz-Finthen"],
+["Bellpepper","restaurant","Gehobenes Restaurant im Hyatt mit offener Showküche und Rheinblick.","Templerstraße 6, 55116 Mainz"],
+["GenussWerkstatt","restaurant","Feines Menü-Restaurant im Atrium Hotel mit regionaler Genussküche.","Flugplatzstraße 44, 55126 Mainz-Finthen"],
+["Geberts Weinstuben","restaurant","Traditionsreiches Weinrestaurant mit Bib Gourmand und schöner Weinterrasse.","Frauenlobstraße 94, 55118 Mainz"],
+["La Gallerie","restaurant","Italienisches Fine-Dining-Restaurant mit feiner Karte in der Altstadt.","Mainz-Altstadt"],
+["pankratz","restaurant","Modernes Restaurant mit konsequent regionaler, saisonaler Küche.","Mainz-Hechtsheim"],
+["Zur Kanzel","restaurant","Gehobenes Restaurant mit französisch inspirierter Küche nahe dem Dom.","Grebenstraße 4, 55116 Mainz"],
+["Heiliggeist","restaurant","Restaurant und Bar im gotischen Gewölbe des ältesten Bürgerspitals Deutschlands.","Rentengasse 2, 55116 Mainz"],
+["Zeitlos am Proviant-Magazin","restaurant","Brasserie mit Gastgarten im historischen Proviant-Magazin.","Schillerstraße 11a, 55116 Mainz"],
+["Haus des Deutschen Weines","restaurant","Weinrestaurant am Gutenbergplatz mit gehobener deutscher Küche.","Gutenbergplatz 3, 55116 Mainz"],
+["Augustinerkeller","restaurant","Weinrestaurant mit regionaler deutscher Küche im historischen Ambiente.","Augustinerstraße 26, 55116 Mainz"],
+["Weinhaus & Restaurant Hahnenhof","restaurant","Weinhaus mit Geflügel aus Freilandhaltung und heimischem Wild.","Mainz"],
+["Am Holztor","restaurant","Gemütliches Lokal zwischen Holzturm und Rheinufer mit herzhafter Küche.","Mainz-Altstadt"],
+["Zum Goldstein","restaurant","Traditionsgasthaus in der Altstadt mit deutscher Küche und Innenhof.","Kartäuserstraße 3, 55116 Mainz"],
+["Wilma Wunder","restaurant","Beliebtes Restaurant-Café am Markt mit Blick auf den Dom.","Markt 11, 55116 Mainz"],
+["Restaurant August","restaurant","Charmantes Altstadtrestaurant mit saisonaler, regionaler Küche.","Mainz-Altstadt"],
+["Hey Du","restaurant","Kleines Altstadtlokal mit Liebe zur Region und frischer Küche.","Mainz-Altstadt"],
+["Brauhaus zur Sonne","restaurant","Brauhaus-Restaurant mit deftiger deutscher Küche und frisch gezapftem Bier.","Mainz"],
+["Bootshaus","restaurant","Modernes Glasrestaurant mit Terrasse und Biergarten direkt am Rhein.","Victor-Hugo-Ufer, 55116 Mainz"],
+["Adam & Eden","restaurant","Stilvolles Restaurant von 1887 mit kreativem Küchenhandwerk und Drinks.","Bahnhofplatz 8, 55116 Mainz"],
+["Caleo","restaurant","Restaurant an der Rheinstraße mit Steaks und exotischen Spezialitäten.","Rheinstraße, 55116 Mainz"],
+["Schwayer","restaurant","Modernes Restaurant mit großer Terrasse am Volkspark.","Göttelmannstraße 40, 55131 Mainz"],
+["Stadthaus Schanke","restaurant","Beliebtes Lokal mit regionaler deutscher Küche.","Mainz"],
+["Goldener Hirsch","restaurant","Familiengeführtes Neustadt-Restaurant mit traditioneller deutscher Küche.","Mainz-Neustadt"],
+["Kamin – Flammkuchen","restaurant","Uriges Restaurant mit Kaminfeuer und über 25 Flammkuchen-Variationen.","Kapuzinerstraße 8, 55116 Mainz"],
+["Bergschön","restaurant","Beliebtes Café-Restaurant im Kirschgarten mit Frühstück, Flammkuchen und Wein.","Kirschgarten 21, 55116 Mainz"],
+["Humberto","restaurant","Restaurant an der Holzhofstraße mit Steaks und internationaler Küche.","Holzhofstraße 14a, 55116 Mainz"],
+["Sömmerd","restaurant","Modernes Neustadt-Lokal mit regionaler, saisonaler Küche.","Mainz-Neustadt"],
+["Willichs","restaurant","Hochwertige rein pflanzliche Küche mit monatlich wechselndem Menü.","Mainz-Neustadt"],
+["Palm Bowls","restaurant","Bowl- und Brunch-Spot mit veganen und glutenfreien Optionen.","Dominikanerstraße 7-9, 55116 Mainz"],
+["Ristorante Da Vito","restaurant","Italienisches Restaurant mit marktfrischer Küche und glutenfreier Auswahl.","Mainz-Altstadt"],
+["Aposto","restaurant","Italiener am Gutenbergplatz mit eigener Pastamanufaktur und Cocktails.","Gutenbergplatz 8-12, 55116 Mainz"],
+["al Cortile","restaurant","Italienisches Restaurant mit lauschigem Innenhof in der Altstadt.","Kartäuserstraße 14, 55116 Mainz"],
+["Bistrorante L'Angolo","restaurant","Italienisches Bistrorante in der Augustinerstraße.","Augustinerstraße 8, 55116 Mainz"],
+["Pizza Pepe","restaurant","Beliebte Altstadt-Pizzeria mit klassischer italienischer Pizza.","Augustinerstraße 21, 55116 Mainz"],
+["Il Mondo","restaurant","Authentischer Italiener in Finthen mit Steinofenpizza und frischem Fisch.","Kurmainzstraße 24, 55126 Mainz-Finthen"],
+["Pizzeria Venezia","restaurant","Klassische italienische Pizzeria in der Neustadt.","Kaiser-Karl-Ring 2, 55118 Mainz"],
+["L'Osteria","restaurant","Italienisches Restaurant mit großen Pizzen in lebhafter Atmosphäre.","Mainz"],
+["Taiyo Sushi & Asian Fusion","restaurant","Schick designtes Restaurant mit Sushi und vietnamesischem Streetfood.","Mainz"],
+["Zenbi","restaurant","Asiatisches Restaurant mit Sushi vom Meister und vietnamesischen Gerichten.","Mainz"],
+["Niko Niko Tei","restaurant","Traditionelles japanisches Restaurant in der Gaustraße.","Gaustraße, 55116 Mainz"],
+["an o ban","restaurant","Vietnamesisches Restaurant mit frischer Küche und eigenen Limonaden.","Wallaustraße 4, 55118 Mainz"],
+["KŌNĀ – Asian Soul Food","restaurant","Asiatisches Soul Food mit Bowls, Curries und panasiatischen Gerichten.","Mittlere Bleiche 16, 55116 Mainz"],
+["Punjab Tandoori","restaurant","Indisches Restaurant mit Currys, Tandoori-Gerichten und frischem Naan.","Mainz-Neustadt"],
+["Burgerheart","restaurant","Burger-Restaurant mit Rheinblick, auch vegetarisch und vegan.","Jockel-Fuchs-Platz 3, 55116 Mainz"],
+["Hans im Glück","restaurant","Burgergrill am Gutenbergplatz mit großer Auswahl.","Gutenbergplatz, 55116 Mainz"],
+["Jamy's Burger","restaurant","Burger mit täglich frisch gebackenen Buns in der Altstadt.","Mainz-Altstadt"],
+["Burger Syndikat","restaurant","Handgemachte Burger im Ciabatta-Bun, auch vegan.","Mainz"],
+["BestWorscht in Town","restaurant","Kultiger Currywurst-Imbiss mit Schärfegraden.","Augustinerstraße 11, 55116 Mainz"],
+["Limón y Sal","restaurant","Authentische spanisch-lateinamerikanische Tapas-Bar.","Mainz"],
+["Santiago","restaurant","Bar-Restaurant am Ballplatz mit internationaler Küche und Cocktails.","Ballplatz 2, 55116 Mainz"],
+["LOMO – Buchbar & Restaurant","restaurant","Restaurant-Lounge mit Bücherwänden und internationaler Küche.","Mainz"],
+["El Chico Steakhaus","restaurant","Etabliertes Steakhaus mit südamerikanischem Flair.","Mainz"],
+["Taverna Meteora","restaurant","Familiengeführter Grieche mit authentischen Familienrezepten.","Mainz-Kastel"],
+["Bei Michos","restaurant","Griechisches Restaurant mit klassischen Tavernagerichten.","Neustraße 4, 55252 Mainz-Kastel"],
+["To Tzaki","restaurant","Griechisches Restaurant in Hechtsheim mit traditioneller Küche.","Grauelstraße 31, 55129 Mainz-Hechtsheim"],
+["Bastion von Schönborn","restaurant","Restaurant mit Beach-Bar am Kasteler Rheinufer mit bestem Mainz-Blick.","Rheinufer 12, 55252 Mainz-Kastel"],
+["Zur Mainlust","restaurant","Traditionsreiches Ausflugslokal mit Biergarten am Mainufer in Kostheim.","Mainz-Kostheim"],
+["Laubenheimer Höhe","restaurant","Restaurant mit Panoramablick über die Weinberge, Biergarten.","Mainz-Laubenheim"],
+["Eisgrub-Bräu","bar","Mainz' erste Gasthausbrauerei mit selbst gebrautem Bier im urigen Gewölbe.","Weißliliengasse 1a, 55116 Mainz"],
+["Kuehn Kunz Rosen Taproom","bar","Craftbier-Brauerei mit Taproom und Biergarten im Industrie-Ambiente.","Weisenauer Straße 15, 55131 Mainz"],
+["Eulchen Biergarten","bar","Sommerlicher Biergarten der Mainzer Eulchen-Brauerei nahe dem Rheinufer.","Fort Malakoff Park, 55116 Mainz"],
+["Rheinhattan Bar","bar","Exklusive Speakeasy-Cocktailbar mit rund 200 Premium-Spirituosen.","Neutorstraße 8, 55116 Mainz"],
+["Spiritus","bar","Ausgezeichnete Cocktailbar ohne feste Karte – jeder Drink wird individuell beraten.","Neutorstraße 5-7, 55116 Mainz"],
+["Daisy Bar","bar","Stilvolle Bar mit hochwertigen Drinks, Highballs und regionalen Weinen.","Gaustraße 12, 55116 Mainz"],
+["Quartier Mayence","bar","Cocktailbar mit Restaurant im Vintage-Look in der Altstadt.","Weihergarten 12, 55116 Mainz"],
+["Sausalitos","bar","Beliebte Cocktailbar mit kalifornisch-mexikanischer Küche.","Mitternachtsgasse 1, 55116 Mainz"],
+["3SEIN","bar","Salon-Tapas-Bar mit feinen Drinks und spanischen Kleinigkeiten.","Große Bleiche 60-62, 55116 Mainz"],
+["Haddocks","bar","Gemütliche Neustadt-Kneipe mit Wohnzimmer-Atmosphäre und Tatort-Abenden.","Frauenlobstraße 29a, 55118 Mainz"],
+["Teilchen & Beschleuniger","bar","Kleine Bierbar mit sieben Fassbieren, Burgern und Sommerterrasse.","Gartenfeldstraße 22, 55118 Mainz"],
+["The Porterhouse Irish Pub","bar","Irisch geführter Pub mit Quiz-Abenden und großem Biergarten.","Große Langgasse 4, 55116 Mainz"],
+["Nolan's Irish Pub","bar","Geräumiger Irish Pub mit Quiz- und Bingo-Abenden.","Neutorstraße 16, 55116 Mainz"],
+["Sixties","bar","Uriges Pub mit Musik der 60er und 70er und wöchentlichem Pub-Quiz.","Große Langgasse 11, 55116 Mainz"],
+["Good Time","bar","Rock- und Dartkneipe mit über 50 Whiskysorten, offen bis morgens.","Hintere Bleiche 18a, 55116 Mainz"],
+["Jack Inn","bar","Rockkneipe in der Neustadt mit Fassbier-Auswahl, Billard und Dart.","Feldbergstraße 3, 55118 Mainz"],
+["Onkel Willy's Pub","bar","Kultige Mainzer Institution seit 1973 mit Dart, Billard und Kicker.","Binger Straße 5, 55116 Mainz"],
+["Krokodil","bar","Urige Traditionskneipe mit Sommer-Biergarten und frischen Schnitzeln.","Neckarstraße 2, 55118 Mainz"],
+["Die Kugel","bar","Wiederbelebte Kultkneipe mit hauseigenem Kugel-Bier und Musik.","Hindenburgstraße 51, 55118 Mainz"],
+["Hafeneck","bar","Linksalternative Traditionskneipe mit Konzerten und Bratkartoffeln.","Frauenlobstraße 93, 55118 Mainz"],
+["Thekenkind","bar","Studentenkneipe nahe dem Hauptbahnhof, bekannt für Bier-Pong-Turniere.","Parcusstraße 11-13, 55116 Mainz"],
+["Kelly's Pub","bar","Pub gegenüber dem Hauptbahnhof mit Live-Konzerten und Fußball.","Schottstraße 2, 55116 Mainz"],
+["Domsgickel","bar","Kultkneipe direkt am Dom mit Innenhof, Flammkuchen und Spundekäs.","Grebenstraße 16, 55116 Mainz"],
+["Klingelbeutel","bar","Historische Altstadtkneipe seit 1982, bekannt für Dinnele.","Kartäuserstraße 6, 55116 Mainz"],
+["Zeitungsente","bar","Traditionskneipe seit über 45 Jahren zwischen Alt- und Neustadt.","Neubrunnenstraße 7, 55116 Mainz"],
+["Zur Andau","bar","Urig-gemütliche Kneipe mit Mainzer Tapas wie Spundekäs und Handkäs.","Gaustraße 77, 55116 Mainz"],
+["Kleines Andechs","bar","Rustikale Nachteulen-Kneipe, täglich bis 4 Uhr geöffnet.","Holzhofstraße 13, 55116 Mainz"],
+["Liebes Lieschen","bar","70er-Jahre-Bar mit Wohnzimmer-Atmosphäre und Themenabenden.","Gaustraße 17, 55116 Mainz"],
+["Zum Bierstübchen","bar","Kleine charmante Eckkneipe am Fischtor im Schatten des Doms.","Fischtorstraße 10, 55116 Mainz"],
+["Nirgendwo","bar","Alteingesessene Studentenkneipe in der Neustadt mit eigenem Bier.","Boppstraße, 55118 Mainz"],
+["Bar jeder Sicht","bar","Queere Kultur-Bar mit Veranstaltungen und entspannter Atmosphäre.","Hintere Bleiche 29, 55116 Mainz"],
+["M-Lounge & Bar","bar","Elegante Hotelbar im Hyatt mit Blick auf den Rhein.","Malakoff-Terrasse 1, 55116 Mainz"],
+["Kulturclub schon schön","bar","Zentrum des etwas anderen Mainzer Nachtlebens mit Konzerten und Partys.","Große Bleiche 60-62, 55116 Mainz"],
+["Red Cat Club","bar","Club im Gewölbekeller, seit 1999 mit Hip-Hop, Indie, Retro und Soul.","Emmerich-Josef-Straße 13, 55116 Mainz"],
+["Die Kulturei","bar","Kulturlocation mit Partys, Flohmärkten, Kunst und Musik.","Mainz"],
+["Caveau","bar","Kult-Club im Altstadtkeller, nach Betreiberwechsel zurück.","Mainz-Altstadt"],
+["Schlossbiergarten","bar","Großer Biergarten mit rund 500 Plätzen vor dem Kurfürstlichen Schloss.","Am Kurfürstlichen Schloss, 55116 Mainz"],
+["Mole am Winterhafen","bar","Biergarten und Sommerlounge mit direktem Rheinblick.","Victor-Hugo-Ufer 4, 55116 Mainz"],
+["Biergarten Favorite","bar","Biergarten in der Oberstadt mit Rheinblick, Spundekäs und Flammkuchen.","Karl-Weiser-Straße 1, 55131 Mainz"],
+["Caponniere","bar","Beliebter Biergarten am Feldbergplatz in der Neustadt.","Feldbergplatz, 55118 Mainz"],
+["Baron (Uni-Campus)","bar","Restaurant und Biergarten auf dem Uni-Campus, beliebt bei Studierenden.","Uni-Campus, 55128 Mainz"],
+["Weinstube Hottum","weinstube","Eine der ältesten Mainzer Weinstuben (1791), klein und gemütlich hinterm Dom.","Grebenstraße 3, 55116 Mainz"],
+["Weinhaus Michel","weinstube","Gemütliche Familien-Weinstube mit eigenem Weingut, Gewölbekeller und Terrasse.","Jakobsbergstraße 8, 55116 Mainz"],
+["Weinhaus zum Spiegel","weinstube","Familiär geführtes Weinlokal im Fachwerkhaus am Leichhof.","Leichhofstraße 1, 55116 Mainz"],
+["Weinhaus Bluhm","weinstube","Traditionsadresse in der Altstadt mit elsässisch angehauchter Küche.","Badergasse, 55116 Mainz"],
+["Weinhaus Lösch","weinstube","Über 100 Jahre alte, holzvertäfelte Weinstube mit Weck, Worscht un Woi.","Jakobsbergstraße 9, 55116 Mainz"],
+["Weinhaus Schreiner","weinstube","Uriges Weinhaus in der Altstadt mit saisonaler, bodenständiger Küche.","Mainz-Altstadt"],
+["Weinhaus Kurfürst","weinstube","Alteingesessenes Weinlokal in der Neustadt mit rheinhessischen Weinen.","Kurfürstenstraße, 55118 Mainz"],
+["Weinhaus Wilhelmi","weinstube","Traditionsreiches Weinhaus seit den 1890ern mit urigem Außenbereich.","Rheinstraße 51, 55116 Mainz"],
+["Weinstube Rote Kopf","weinstube","Eine der ältesten Weinstuben der Stadt, versteckt in der Rotekopfgasse.","Rotekopfgasse 4, 55116 Mainz"],
+["Weinstube Zum Bacchus","weinstube","Beliebte Altstadt-Weinstube mit zelebrierter deutscher Küche.","Jakobsbergstraße 7, 55116 Mainz"],
+["Weinhaus zum Beichtstuhl","weinstube","Legendäre Altstadt-Weinstube mit Beichtstuhl-Vertäfelung.","Kapuzinerstraße 30, 55116 Mainz"],
+["Weinbar Laurenz","weinstube","Kleine, feine Weinbar mit Spitzenweinen aus Rheinhessen und starken Menüs.","Mainz-Neustadt"],
+["Ladendorfs Weinhaus","weinstube","Modern-skandinavisches Weinhaus am Fuß der Gaustraße.","Gaustraße, 55116 Mainz"],
+["Weinbar Dagobert","weinstube","Hippe Weinbar mit rheinhessischen und Naturweinen im Backstein-Ambiente.","Dagobertstraße, 55116 Mainz"],
+["Weinbar Onkel Oskar","weinstube","Moderne Weinstube an der Rheinallee mit Naturweinen und Tapas.","Rheinallee, 55118 Mainz"],
+["Droschkenstube","weinstube","Urig-gesellige Weinstube in der Neustadt mit Retro-Ambiente.","Mainz-Neustadt"],
+["anything but coffee","cafe","Charmantes blaues Café mit hausgemachten, teils veganen Leckereien.","Boppstraße 7, 55118 Mainz"],
+["Bellini's Herzstück","cafe","Familiengeführtes Café mit Frühstück, Waffeln und Spundekäs.","Adam-Karrillon-Straße 4, 55118 Mainz"],
+["Bukafski","cafe","Buchhandlung und Café in einem, mit Kaffee, Kuchen und Sesseln.","Kurfürstenstraße 9, 55118 Mainz"],
+["Café Hilda","cafe","Café am Bismarckplatz, berühmt für New-York-Style-Cookies.","Richard-Wagner-Straße 13, 55118 Mainz"],
+["Café Lina","cafe","Beliebter Brunch- und Kaffeespot mit selbstgebackenen Kuchen.","Karoline-Stern-Platz 11, 55118 Mainz"],
+["Das Nest","cafe","Tagsüber Frühstück und Kuchen, abends Cocktails und Wein.","Kaiser-Wilhelm-Ring 40, 55118 Mainz"],
+["Fette Henne","cafe","Das Neustadt-Café am Gartenfeldplatz mit großer Kuchentheke und Matcha.","Gartenfeldplatz 2, 55118 Mainz"],
+["George","cafe","Liebevolles Neustadt-Café mit sensationellem Kuchen und Frühstück.","Frauenlobstraße 51, 55118 Mainz"],
+["Goldmarie","cafe","Modernes Café am Zollhafen mit Wochenend-Brunch und Mittagstisch.","Clarissa-Kupferberg-Platz 9, 55118 Mainz"],
+["Hygge","cafe","Skandinavisch inspiriertes Café mit Frühstück, Kuchen und Mittagstisch.","Rhabanusstraße 13, 55118 Mainz"],
+["kavé studio","cafe","Puristisches Specialty-Coffee-Café mit Matcha und Zimt-Buns.","Boppstraße 54, 55118 Mainz"],
+["Krumm&Schepp","cafe","Erstes Foodsharing-Café im Rhein-Main-Gebiet, zahl was es dir wert ist.","Karoline-Stern-Platz 9, 55118 Mainz"],
+["Liesbeth Hofbäckerei","cafe","Hofbäckerei-Café am Zollhafen mit Sauerteigbrot und Top-Croissants.","Am Zollhafen 1, 55118 Mainz"],
+["Neustadt Apotheke","cafe","Café-Bar in einer ehemaligen Apotheke, abends Fassbier und Mexikaner.","Frauenlobplatz 5, 55118 Mainz"],
+["The Kiwi Corner","cafe","Vegane Brunch-Bar mit neuseeländischem Flair.","Gartenfeldstraße 10, 55118 Mainz"],
+["Via del Wir","cafe","Kleines Café mit Kaffee-Fenster, Röstkaffee und Panini.","Frauenlobstraße 58, 55118 Mainz"],
+["Aller guten Dinge","cafe","Bistro-Café am Graben mit Terrasse, Kuchen und Focaccias.","Graben 3, 55116 Mainz"],
+["Après","cafe","Modernes Patisserie-Café mit Tartes, Bowls und Kaffeespezialitäten.","Christofsstraße 11, 55116 Mainz"],
+["butter.fly brunch & bar","cafe","Brunch-Café und Bar in einem, mit Stullen, Bowls und Cocktails.","Große Langgasse 12, 55116 Mainz"],
+["café blumen","cafe","Kleine Schwester des schon schön, von morgens bis tief in die Nacht.","Große Bleiche 60-62, 55116 Mainz"],
+["Café Nina","cafe","Gemütlicher Rückzugsort mit Kuchen und orientalischen Spezialitäten.","Steingasse 21, 55116 Mainz"],
+["Ciao Amore","cafe","Sizilianisches Café mit Cornetti, Arancini und Familien-Flair.","Klarastraße 19, 55116 Mainz"],
+["Die gute Stube","cafe","Rein veganes Café mit wechselndem Frühstücks- und Kuchenangebot.","Hopfengarten 10, 55116 Mainz"],
+["Lille Hus","cafe","Skandinavisches Café am Kirschgarten mit Pancakes und Smörrebröd.","Kirschgarten 21, 55116 Mainz"],
+["Maldaner Espressobar","cafe","Espressobar der Wiesbadener Traditionsrösterei in der Augustinerstraße.","Augustinerstraße 19, 55116 Mainz"],
+["Oma Else","cafe","Lockerer Altstadt-Klassiker mit Bio-Qualität und saisonaler Karte.","Jakobsbergstraße 12, 55116 Mainz"],
+["Schnack","cafe","Verstecktes Café, bekannt für hauseigene Zimtschnecken.","Mitternacht 18, 55116 Mainz"],
+["Willems im Altstadtcafé","cafe","Bio-zertifiziertes Frühstückscafé mit Eggs Benedict.","Schönbornstraße 9a, 55116 Mainz"],
+["Woods","cafe","Modernes Frühstückscafé mit Smoothie-Bowls und Bagels.","Rheinstraße 45a, 55116 Mainz"],
+["Kaffeekommune","cafe","Specialty-Coffee-Rösterei und Café mit Cuppings und frischen Scones.","Breidenbacherstraße 9, 55116 Mainz"],
+["Dicke Lilli, gutes Kind","cafe","Beliebtes Frühstückscafé seit 2012 mit Wohnzimmer-Gemütlichkeit.","Gaustraße 2, 55116 Mainz"],
+["N'Eis – Das Neustadteis","cafe","Kult-Eisdiele mit handgemachtem Eis am Gartenfeldplatz.","Gartenfeldplatz 12, 55118 Mainz"],
+["Eiscafé La Dolce Vita","cafe","Legendäres Eiscafé in Hechtsheim mit italienischem Eis und Terrasse.","Alte Mainzer Straße 15a, 55129 Mainz"],
+["Weingut & Gutsschänke Weyer","winzer","Ganzjährige Gutsschänke mit Innenhof, Wintergarten und rheinhessischen Speisen.","Am Heckerpfad 24, 55128 Mainz-Bretzenheim"],
+["Laurentiushof – Weingut Eckert","winzer","Familienweingut mit legendärer Straußwirtschaft im alten Ortskern.","Laurentiusstraße 22, 55129 Mainz-Ebersheim"],
+["Fasanenhof","winzer","Traditionsweingut seit 1756 mit Straußwirtschaft und Planwagenfahrten.","Zum Schollberg 12, 55129 Mainz-Ebersheim"],
+["Weingut Florian & Helmut Eckert","winzer","Familienweingut seit 1790 mit Hofladen und Vinothek.","Römerstraße 3, 55129 Mainz-Ebersheim"],
+["Weingut Eva Vollmer","winzer","Bekanntes Bio-Weingut mit legendärem Sommer-Weinpicknick im Genussgarten.","Nieder-Olmer-Straße 65, 55129 Mainz-Ebersheim"],
+["Weingut Janz","winzer","Familienweingut in fünfter Generation mit modernen Weinen.","Nieder-Olmer-Straße 85, 55129 Mainz-Ebersheim"],
+["Weingut Ginz","winzer","Familienweingut seit 1856 mit frischen Weiß- und Roséweinen.","Töngesstraße 18, 55129 Mainz-Ebersheim"],
+["Weingut Nauth","winzer","Kleinstes Weingut von Mainz mit gemütlicher Weinstube.","Neugasse 13, 55129 Mainz-Ebersheim"],
+["Weingut Worf","winzer","Traditionsweingut mit klassischen, authentischen Rheinhessen-Weinen.","Nieder-Olmer-Straße 63, 55129 Mainz-Ebersheim"],
+["Winzerfamilie Peter-Dhom","winzer","Straußwirtschaft mit Sonnenterrasse auf der Laubenheimer Höhe.","Jakob-Braunwart-Weg 3, 55129 Mainz-Hechtsheim"],
+["Gutsausschank Leber","winzer","Gutsausschank im Winzerhof mit Hechtsheimer Weinen und Handkäs.","Klein-Winternheimer Weg 4, 55129 Mainz-Hechtsheim"],
+["Weingut Rebenhof","winzer","Weingut mit Weinstube und sommerlichem Hofausschank zwischen den Reben.","Heuerstraße 4, 55129 Mainz-Hechtsheim"],
+["Fleischer Wein (Weingut der Stadt Mainz)","winzer","Weingut der Stadt Mainz seit 1742, bekannte Adresse für Mainzer Wein.","Rheinhessenstraße 103, 55129 Mainz-Hechtsheim"],
+["Weingut Christophorus-Hof","winzer","Weingut seit 1654 mit stilvoller Vinothek für Weinproben.","Heuerstraße 13, 55129 Mainz-Hechtsheim"],
+["Weingut Mirjam Schneider","winzer","Weingut seit 1715 mit Vinothek und Hofladen 'Kraut & Reben'.","Klein-Winternheimer-Weg 6, 55129 Mainz-Hechtsheim"],
+["Weingut Zehe-Clauß","winzer","Mehrfach prämiertes Öko-Weingut mit Vinothek.","Rheinhessenstraße 109, 55129 Mainz-Hechtsheim"],
+["Weingut Stenner","winzer","Naturnahes Familienweingut mit spontan vergorenen Weinen.","Grauelstraße 11, 55129 Mainz-Hechtsheim"],
+["Weingut Heinz Lemb","winzer","Familienweingut im historischen Ortskern, Wurzeln bis 1737.","Grauelstraße 8, 55129 Mainz-Hechtsheim"],
+["Weingut Zehnerhof","winzer","Historischer Hof mit weinüberranktem Innenhof, Familienbetrieb seit 1830.","Grauelstraße 1, 55129 Mainz-Hechtsheim"],
+["Weingut Karthäuserhof","winzer","Weingut auf historischem Kartäuser-Anwesen.","Am Kartäuserhof 9, 55129 Mainz-Hechtsheim"],
+["Weingut Klein","winzer","Junges Weingut mit Vinothek – 'von Hand. Für Freunde.'","Rheinhessenstraße 103a, 55129 Mainz-Hechtsheim"],
+["Weingut Jung","winzer","Landwirtschaftlicher Mischbetrieb mit Weinbau und Hofladen.","Bürgermeister-Schmitt-Straße 21, 55129 Mainz-Hechtsheim"],
+["Weingut Berthold Möhn","winzer","Weingut seit 1750 mit Gutsausschank, Straußwirtschaft und Winelounge.","Pfarrer-Goedecker-Straße 13, 55130 Mainz-Laubenheim"],
+["Weingut Sankt Urban","winzer","Familienweingut mit Weinbergsrundfahrten per Traktor.","Hans-Zöller-Straße 25, 55130 Mainz-Laubenheim"],
+["Weingarten im Draisberghof","winzer","Straußwirtschaft mit Bio-Weinen zwischen Gonsenheim und Drais, Picknick erlaubt.","Draisberghof 1, 55124 Mainz"],
+["Weingut Schilling","winzer","Weingut mit traditioneller Straußwirtschaft (Spundekäs, Mainzer Teller).","Mainz-Kostheim"],
+["Römerhof – Weingut Wann","winzer","Hofausschank mit eigenem Wein, Spargel und Obst aus eigenem Anbau.","Steinern Straße 99, 55252 Mainz-Kostheim"],
+["Weingut Kirch – 'Zur guten Stube'","winzer","Straußwirtschaft am Fuß der Bodenheimer Weinberge, Mai bis September.","Schreiberweg 2, 55294 Bodenheim"],
+["Weingut & Gutsschänke Haub","winzer","'Hof in den Weingärten' mit Gutsschänke und Sonntagsmittagstisch.","Schreiberweg 11, 55294 Bodenheim"],
+["Weingut Gauer – Potsdamer Hof","winzer","Weinstube am Bodenheimer Weinlehrpfad mit rheinhessischen Gerichten.","Plattenhohl 1, 55294 Bodenheim"],
+["Weingut Duttenhöfer – 'Zur Dutt'","winzer","Weingut mit gemütlichem Wochenend-Ausschank.","Langgasse 17, 55294 Bodenheim"],
+["Weingut Gruber","winzer","Weingut mit Straußwirtschaft, fast ganzjährig Do–So geöffnet.","In der Hüttstädt 8, 55294 Bodenheim"],
+["Weinhaus May","winzer","Saisonale Straußwirtschaft 'Wein unter Freunden'.","Hellmerichstraße 13, 55294 Bodenheim"],
+["Uriger Weinkeller","winzer","Ganzjährig geöffnetes uriges Weinlokal eines Bodenheimer Weinguts.","Langgasse 20, 55294 Bodenheim"],
+["Zum Kapellenhof","winzer","Winter-Straußwirtschaft, von Ende September bis Ende April geöffnet.","Kirchbergstraße 22, 55294 Bodenheim"],
+["Weingut Kühling-Gillot","winzer","Renommiertes VDP-Bioweingut mit Spitzenlagen am Roten Hang.","Ölmühlstraße 25, 55294 Bodenheim"],
+["Weingut Gunderloch","winzer","Weltbekanntes VDP-Weingut seit 1890, Rieslinge vom Rothenberg.","Carl-Gunderloch-Platz 1, 55299 Nackenheim"],
+["Gutsausschank Sans-Lorch","winzer","Familienweingut am Rhein mit Rheinhessen-Tapas und Weinwanderungen.","55299 Nackenheim"],
+["Weingut St. Antony","winzer","Bekanntes Bio-VDP-Weingut mit Spitzenrieslingen vom Roten Hang.","55283 Nierstein"],
+["Weingut Schätzel","winzer","Traditionsreiches VDP-Weingut, bekannt für handwerkliche Rieslinge.","55283 Nierstein"],
+["Straußwirtschaft Gustav Strub","winzer","Traditionelle Straußwirtschaft mit Niersteiner Weinen und rustikaler Küche.","Rheinstraße 36, 55283 Nierstein"],
+["Weingut Louis Guntrum","winzer","Traditionsweingut direkt am Rheinufer mit Vinothek.","Rheinallee 62, 55283 Nierstein"],
+["Weingut Gehring","winzer","Weingut am Roten Hang mit eigener Straußwirtschaft.","55283 Nierstein"],
+["Weingut Raddeck","winzer","Weingut oberhalb von Nierstein mit Ausschank und Rheintal-Blick.","55283 Nierstein"],
+["Weinbaudomäne Oppenheim","winzer","Traditionsreiche Staatsdomäne mit Vinothek.","Wormser Straße 162, 55276 Oppenheim"],
+["Weingut Dahlem Erben","winzer","Historisches Familienweingut in Oppenheim mit Weinproben.","55276 Oppenheim"],
+["Weingut Escher","winzer","Familienweingut in Gau-Bischofsheim mit eigenem Ausschank.","55296 Gau-Bischofsheim"],
+["Weingut Nack","winzer","Weingut mit bekannter Gutsschänke und rheinhessischer Küche.","55296 Gau-Bischofsheim"],
+["Weingut Gottwald","winzer","Weingut im Dreiländereck bei Lörzweiler mit Ausschank.","55296 Lörzweiler"],
+["Gutsschänke Steigerhof","winzer","Gutsschänke mit Dachterrasse und Blick über die rheinhessischen Hügel.","Rheinhessenstraße, 55296 Harxheim"],
+["Weingut Münzenberger","winzer","Zornheimer Familienweingut mit Weinproben und Hoffesten.","Lindenplatz 9, 55270 Zornheim"],
+["Weingut Sieben","winzer","Familienweingut, Mitglied im WeinErlebnis Zornheimer Berg.","Nieder-Olmer-Straße 24, 55270 Zornheim"],
+["Zornheimer Weinstuben","winzer","Weinstube mit Weinen der Zornheimer Winzer und regionaler Küche.","55270 Zornheim"],
+["Weingut Eckert (Klein-Winternheim)","winzer","Familienweingut vor den Toren von Mainz mit Weinproben.","55270 Klein-Winternheim"],
+["Weingut Bugner – Meizelhof","winzer","Familienweingut mit Lagen rund um Klein-Winternheim.","55270 Klein-Winternheim"],
+["Weingut J. Neus","winzer","Renommiertes Ingelheimer Traditionsweingut, berühmt für Spätburgunder.","Bahnhofstraße 96, 55218 Ingelheim"],
+["Weingut Wasem Doppelstück","winzer","Modernes Bio-Weingut mit Vinothek, Restaurant und Sommer-Straußwirtschaft.","55218 Ingelheim"],
+["Gutsausschank 'Zum Kuhstall'","winzer","Gutsausschank mit Kreuzgewölbe und Rheinhessen-Tapas in Ober-Ingelheim.","55218 Ingelheim"],
+["Weingut Hamm","winzer","Garten-Straußwirtschaft gegenüber der Burgkirche, direkt an den Weinbergen.","55218 Ingelheim"],
+["Weingut Singer-Fischer","winzer","Straußwirtschaft mit italienisch-rheinhessischer Küche und eigenen Sekten.","55218 Ingelheim-Großwinternheim"],
+["Gutsausschank Breidscheid","winzer","Gutsschänke mit Panoramaterrasse, sonntags Spießbraten.","55218 Ingelheim-Großwinternheim"],
+["Weingut Claushof","winzer","Familienweingut in Heidesheim mit Weinverkauf ab Hof.","55262 Heidesheim am Rhein"],
+["Nelgen Weine","winzer","Weingut in Wackernheim mit Weinen vom Westerberg.","55263 Wackernheim"],
+["Weingut Rump","winzer","Weingut mit Lagen in Heidesheim, Wackernheim und Ingelheim.","55262 Heidesheim am Rhein"],
+];
+
+const slug = s => s.toLowerCase().replace(/[^a-z0-9äöüß]+/g,"-").replace(/^-|-$/g,"");
+const DATA = RAW.map(r=>({id:slug(r[0])+"-"+r[1].slice(0,3), name:r[0], cat:r[1], desc:r[2], addr:r[3]}));
+
+// ---- Persistenz ----
+const KEY="mainz-bucketlist-v1";
+let done={};
+try{ done=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ done={}; }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(done)); }catch(e){} }
+
+// ---- State ----
+let activeCat="alle", filter="alle", query="";
+
+// ---- Tabs ----
+function renderTabs(){
+  const t=document.getElementById("tabs");
+  let html=`<button class="tab ${activeCat==="alle"?"active":""}" data-c="alle">Alle <small>${countDone("alle")}/${countAll("alle")}</small></button>`;
+  for(const c in CATS){
+    html+=`<button class="tab ${activeCat===c?"active":""}" data-c="${c}">${CATS[c].emoji} ${CATS[c].label} <small>${countDone(c)}/${countAll(c)}</small></button>`;
+  }
+  t.innerHTML=html;
+  t.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeCat=b.dataset.c;render();});
+}
+const countAll=c=>DATA.filter(d=>c==="alle"||d.cat===c).length;
+const countDone=c=>DATA.filter(d=>(c==="alle"||d.cat===c)&&done[d.id]).length;
+
+// ---- Liste ----
+function matches(d){
+  if(activeCat!=="alle"&&d.cat!==activeCat)return false;
+  if(filter==="offen"&&done[d.id])return false;
+  if(filter==="done"&&!done[d.id])return false;
+  if(query&&!(d.name+" "+d.desc+" "+d.addr).toLowerCase().includes(query))return false;
+  return true;
+}
+function renderMain(){
+  const m=document.getElementById("main");
+  const cats=activeCat==="alle"?Object.keys(CATS):[activeCat];
+  let html="";
+  for(const c of cats){
+    const items=DATA.filter(d=>d.cat===c&&matches(d));
+    if(!items.length)continue;
+    html+=`<div class="cat-head"><h2>${CATS[c].emoji} ${CATS[c].label}</h2><span>${countDone(c)} / ${countAll(c)} erledigt</span></div><div class="list">`;
+    for(const d of items){
+      html+=`<div class="item ${done[d.id]?"done":""}" data-id="${d.id}">
+        <div class="check" data-act="toggle">${done[d.id]?"✓":""}</div>
+        <div class="item-body"><b>${d.name}</b><span>${d.desc}</span></div>
+        <div class="chev">›</div></div>`;
+    }
+    html+=`</div>`;
+  }
+  m.innerHTML=html||`<div class="empty">Nichts gefunden 🤷</div>`;
+  m.querySelectorAll(".item").forEach(el=>{
+    el.onclick=e=>{
+      const id=el.dataset.id;
+      if(e.target.dataset.act==="toggle"){ toggle(id); }
+      else openSheet(id);
+    };
+  });
+}
+function renderHeader(){
+  const a=countAll("alle"),d=countDone("alle");
+  document.getElementById("totalbar").style.width=(a?100*d/a:0)+"%";
+  document.getElementById("totallabel").textContent=`${d} / ${a}`;
+}
+function render(){ renderTabs(); renderMain(); renderHeader(); }
+
+function toggle(id){
+  if(done[id])delete done[id]; else done[id]=1;
+  save(); render();
+  const sheet=document.getElementById("sheet");
+  if(sheet.classList.contains("open")&&sheet.dataset.id===id)updateSheetBtn(id);
+}
+
+// ---- Detail-Sheet ----
+function openSheet(id){
+  const d=DATA.find(x=>x.id===id); if(!d)return;
+  const q=encodeURIComponent(d.name+", "+(d.addr.includes("Mainz")||/\d{5}/.test(d.addr)?d.addr:d.addr+", Mainz"));
+  const sheet=document.getElementById("sheet");
+  sheet.dataset.id=id;
+  sheet.innerHTML=`
+    <div class="grip"></div>
+    <span class="badge">${CATS[d.cat].emoji} ${CATS[d.cat].label}</span>
+    <h2>${d.name}</h2>
+    <p class="desc">${d.desc}</p>
+    <p class="addr">📍 ${d.addr}</p>
+    <iframe class="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+      src="https://maps.google.com/maps?q=${q}&z=15&output=embed"></iframe>
+    <div class="btn-row">
+      <button class="btn check-btn" id="sheetcheck"></button>
+      <a class="btn maps" target="_blank" rel="noopener"
+         href="https://www.google.com/maps/search/?api=1&query=${q}">Google Maps</a>
+    </div>`;
+  updateSheetBtn(id);
+  document.getElementById("sheetcheck").onclick=()=>toggle(id);
+  document.getElementById("backdrop").classList.add("open");
+  sheet.classList.add("open");
+}
+function updateSheetBtn(id){
+  const b=document.getElementById("sheetcheck"); if(!b)return;
+  b.classList.toggle("done",!!done[id]);
+  b.textContent=done[id]?"✓ Erledigt":"Als erledigt markieren";
+}
+function closeSheet(){
+  document.getElementById("sheet").classList.remove("open");
+  document.getElementById("backdrop").classList.remove("open");
+}
+document.getElementById("backdrop").onclick=closeSheet;
+
+// ---- Suche & Filter ----
+document.getElementById("search").oninput=e=>{query=e.target.value.trim().toLowerCase();renderMain();};
+document.getElementById("seg").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    filter=b.dataset.f;
+    document.querySelectorAll("#seg button").forEach(x=>x.classList.toggle("active",x===b));
+    renderMain();
+  };
+});
+
+// ---- Backup ----
+document.getElementById("backup").onclick=()=>{
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(Object.keys(done)))));
+  const inp=prompt("Dein Sicherungs-Code (kopieren & aufbewahren).\nZum Wiederherstellen: alten Code hier einfügen und OK drücken.",code);
+  if(inp&&inp!==code){
+    try{
+      const ids=JSON.parse(decodeURIComponent(escape(atob(inp.trim()))));
+      done={}; ids.forEach(i=>done[i]=1); save(); render();
+      alert("Fortschritt wiederhergestellt ✓");
+    }catch(e){ alert("Code ungültig."); }
+  }
+};
+
+render();
+</script>
+</body>
+</html>
