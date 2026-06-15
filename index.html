@@ -247,7 +247,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.1";
+const APP_VERSION="2.2";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -590,18 +590,19 @@ async function decryptObj(key,blob){
 }
 
 // ======== Daten / State ========
-let done={}, ratings={};
+let done={}, ratings={}, meUpdated=0;
 let members={};
 let cryptoKey=null, dbPath="", membersRef=null;
 let activeCat="alle", filter="alle", query="", screen="home", view="liste";
 
 function loadLocal(){
-  try{ const o=JSON.parse(localStorage.getItem("ag-data-"+profile)||"{}"); done=o.done||{}; ratings=o.ratings||{}; }
-  catch(e){ done={}; ratings={}; }
+  try{ const o=JSON.parse(localStorage.getItem("ag-data-"+profile)||"{}"); done=o.done||{}; ratings=o.ratings||{}; meUpdated=o.updated||0; }
+  catch(e){ done={}; ratings={}; meUpdated=0; }
   members[profile]={done:{...done}, ratings:{...ratings}};
 }
 function save(){
-  try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:Date.now()})); }catch(e){}
+  meUpdated=Date.now();
+  try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:meUpdated})); }catch(e){}
   members[profile]={done:{...done}, ratings:{...ratings}};
   pushMine();
 }
@@ -626,11 +627,13 @@ function initFirebase(){
       const dec=await decryptObj(cryptoKey, val[name]);
       if(!dec) continue;
       if(name===profile){
-        const rd=dec.done||{}, rr=dec.ratings||{};
-        done={...rd, ...done};
-        ratings={...rr, ...ratings};
-        try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:Date.now()})); }catch(e){}
-        if(!(sameMap(done,rd)&&sameMap(ratings,rr))) pushNeeded=true;
+        const ru=dec.updated||0;
+        if(ru>meUpdated){
+          done=dec.done||{}; ratings=dec.ratings||{}; meUpdated=ru;
+          try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:meUpdated})); }catch(e){}
+        } else if(meUpdated>ru){
+          pushNeeded=true;
+        }
         next[profile]={done:{...done}, ratings:{...ratings}};
       } else {
         next[name]={done:dec.done||{}, ratings:dec.ratings||{}};
@@ -638,7 +641,7 @@ function initFirebase(){
     }
     if(!next[profile]){
       next[profile]={done:{...done}, ratings:{...ratings}};
-      if(Object.keys(done).length||Object.keys(ratings).length) pushNeeded=true;
+      if(meUpdated>0) pushNeeded=true;
     }
     members=next;
     setSync(true, MEMBERS.filter(n=>members[n]).length+" Profile · synchron");
@@ -651,7 +654,7 @@ function pushMine(){
   if(!membersRef||!cryptoKey) return;
   clearTimeout(pushT);
   pushT=setTimeout(async()=>{
-    try{ const blob=await encryptObj(cryptoKey,{done,ratings,updated:Date.now()}); membersRef.child(profile).set(blob); }catch(e){}
+    try{ const blob=await encryptObj(cryptoKey,{done,ratings,updated:meUpdated}); membersRef.child(profile).set(blob); }catch(e){}
   },400);
 }
 
