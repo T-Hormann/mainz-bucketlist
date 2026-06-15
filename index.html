@@ -143,6 +143,11 @@ main{padding:12px 14px 24px}
 .navbtn .lb{display:block;font-size:10.5px;margin-top:3px}
 .navbtn.active{color:var(--bordeaux)}
 .navbtn.active .lb{font-weight:600}
+#ptr{position:fixed;top:0;left:0;right:0;z-index:25;display:flex;align-items:center;justify-content:center;gap:9px;height:56px;transform:translateY(-56px);background:var(--bg);color:var(--muted);font-size:13px;pointer-events:none}
+#ptr .spin{width:18px;height:18px;border:2px solid var(--gold-line);border-top-color:var(--gold);border-radius:50%}
+#ptr.spinning .spin{animation:ptrspin .8s linear infinite}
+@keyframes ptrspin{to{transform:rotate(360deg)}}
+.ver{text-align:center;font-size:11px;color:#C3B6A0;padding:16px 0 4px}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -156,6 +161,8 @@ main{padding:12px 14px 24px}
 </style>
 </head>
 <body>
+
+<div id="ptr"><span class="spin"></span><span id="ptrtxt">Zum Aktualisieren ziehen</span></div>
 
 <div class="appbar">
   <div>
@@ -240,6 +247,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
+const APP_VERSION="2.1";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -727,6 +735,7 @@ function renderHome(){
       <div class="ttl">Gemeinsam entscheiden</div>
       <p>Hier kommen eure Gruppen-Abstimmungen rein – „Wohin als Nächstes?", „Welches Weingut?" – jede:r stimmt ab, die App zählt aus.</p></div>`;
 
+  h+=`<div class="ver">Agraffen-App · v${APP_VERSION}</div>`;
   el.innerHTML=h;
   const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
 }
@@ -940,6 +949,29 @@ async function boot(){
     initFirebase();
   }catch(e){ setSync(false,"offline"); }
 }
+// ======== Pull-to-Refresh (für Home-Bildschirm-App) ========
+(function(){
+  const ptr=document.getElementById("ptr"), txt=document.getElementById("ptrtxt");
+  const THRESH=70; let startY=0, pulling=false, dist=0;
+  function canPull(t){
+    if(window.scrollY>0) return false;
+    if(document.getElementById("sheet").classList.contains("open")) return false;
+    if(document.getElementById("overlay").classList.contains("show")) return false;
+    if(t&&t.closest&&(t.closest("#map")||t.closest(".leaflet-container"))) return false;
+    return true;
+  }
+  window.addEventListener("touchstart",e=>{ if(canPull(e.target)){ startY=e.touches[0].clientY; pulling=true; dist=0; } },{passive:true});
+  window.addEventListener("touchmove",e=>{
+    if(!pulling) return;
+    dist=e.touches[0].clientY-startY;
+    if(dist>0){ ptr.style.transition="transform 0s"; ptr.style.transform="translateY("+(Math.min(dist*0.5,80)-56)+"px)"; txt.textContent = dist>THRESH ? "Loslassen zum Aktualisieren" : "Zum Aktualisieren ziehen"; }
+  },{passive:true});
+  window.addEventListener("touchend",()=>{
+    if(!pulling) return; pulling=false;
+    if(dist>THRESH){ ptr.style.transition="transform .2s"; ptr.style.transform="translateY(0)"; ptr.classList.add("spinning"); txt.textContent="Aktualisiere\u2026"; setTimeout(()=>{ location.replace(location.pathname+"?r="+Date.now()+(location.hash||"")); },250); }
+    else { ptr.style.transition="transform .25s"; ptr.style.transform="translateY(-56px)"; }
+  },{passive:true});
+})();
 boot();
 </script>
 </body>
