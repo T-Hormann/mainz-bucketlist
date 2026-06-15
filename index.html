@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#b3203c">
+<meta name="theme-color" content="#FBF8F1">
 <title>Mainz Bucket List</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
@@ -15,9 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
-  --red:#b3203c; --red-dark:#8e1830;
-  --bg:#f6f4f1; --card:#ffffff; --text:#1c1b1a; --muted:#8a857e;
-  --line:#e9e5e0; --green:#2e9e5b;
+  --bg:#FBF8F1; --card:#ffffff; --text:#2A2018; --muted:#9A8B77;
+  --line:#ECE3D3; --line2:#F2EADC;
+  --bordeaux:#7A2740; --bordeaux-dark:#5E1D31; --bordeaux-soft:#F3E7EB;
+  --gold:#B8901F; --gold-soft:#F1E7CC; --gold-line:#E4D2A4;
+  --green:#3B8C66;
   --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -25,178 +27,196 @@ html,body{height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg); color:var(--text);
-  padding-bottom:env(safe-area-inset-bottom);
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
 }
-header{
-  background:linear-gradient(135deg,var(--red),var(--red-dark));
-  color:#fff; padding:calc(14px + env(safe-area-inset-top)) 18px 14px;
-  position:sticky; top:0; z-index:20;
+/* App-Bar */
+.appbar{
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
 }
-header h1{font-size:20px; font-weight:700; letter-spacing:.2px}
-.progress-row{display:flex;align-items:center;gap:10px;margin-top:8px}
-.progress-bar{flex:1;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
-.progress-bar i{display:block;height:100%;background:#fff;border-radius:3px;transition:width .4s}
-.progress-label{font-size:12px;opacity:.9;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tabs{
-  display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch;
-}
+.brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:var(--bordeaux);letter-spacing:.3px}
+.brand .g{font-size:18px}
+.agchip{background:var(--gold-soft);color:#7A5A12;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--gold-line)}
+.sync{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-top:2px}
+.sync .dot{width:7px;height:7px;border-radius:50%;background:#7ec9a0}
+.sync.off .dot{background:#e6c069}
+/* Screens */
+.screen{display:none}
+.screen.active{display:block}
+main,.pad{padding:12px 14px 24px}
+/* Home */
+.greet{padding:14px 16px 2px}
+.greet h2{font-size:17px;font-weight:700}
+.greet p{font-size:13px;color:var(--muted);margin-top:2px}
+.hcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin:12px 14px 0}
+.hcard h3{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.lead{border-left:3px solid var(--bordeaux)}
+.soon{background:#FAF5EC;border:1px dashed var(--gold-line)}
+.soon .badge-soon{display:inline-block;background:var(--gold-soft);color:#7A5A12;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px}
+.soon p{font-size:13px;color:#8A7A60;line-height:1.45;margin-top:4px}
+.soon .ttl{font-size:15px;font-weight:600;color:var(--text)}
+.progress-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.bar{height:9px;background:#F0E7D6;border-radius:5px;margin:8px 0 4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:5px;transition:width .4s}
+.cta{width:100%;margin:12px 14px 0;width:calc(100% - 28px);background:var(--gold);color:#fff;border:0;border-radius:14px;padding:15px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.cta:active{transform:scale(.98)}
+.cta-sub{text-align:center;font-size:11.5px;color:var(--muted);margin-top:5px}
+.eventcard .ttl{font-size:15px;font-weight:600}
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.rank-row:last-child{border-bottom:0}
+.rank-row .pos{width:18px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rank-row .nm{flex:1;font-size:14.5px}
+.rank-row .ct{font-size:13px;color:var(--bordeaux);font-weight:600}
+.av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;font-weight:700;flex:0 0 auto}
+/* Liste */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex:0 0 auto;border:1px solid var(--line);background:var(--card);
-  border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;
-  color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer;
-}
+.tab{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer}
 .tab small{font-weight:500;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
-.tab.active{background:var(--red);border-color:var(--red);color:#fff}
+.tab.active{background:var(--bordeaux);border-color:var(--bordeaux);color:#fff}
 .tab.active small{color:rgba(255,255,255,.8)}
 .controls{padding:8px 14px 0;display:flex;flex-direction:column;gap:8px}
-.search{
-  width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);
-  padding:10px 14px;font-size:16px;color:var(--text);outline:none;
-}
+.search{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 14px;font-size:16px;color:var(--text);outline:none}
 .search::placeholder{color:var(--muted)}
-.seg{display:flex;background:#ece9e4;border-radius:10px;padding:3px}
-.seg button{
-  flex:1;border:0;background:transparent;border-radius:8px;padding:7px 0;
-  font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
-}
-.seg button.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-main{padding:10px 14px 40px}
-.cat-head{
-  display:flex;align-items:baseline;justify-content:space-between;
-  margin:18px 2px 8px;
-}
+.seg{display:flex;background:#EFE7D9;border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:8px;padding:7px 0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cat-head{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 8px}
 .cat-head h2{font-size:16px;font-weight:700}
 .cat-head span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .list{background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
-.item{
-  display:flex;align-items:center;gap:12px;padding:12px 14px;
-  border-bottom:1px solid var(--line);cursor:pointer;
-}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line2);cursor:pointer}
 .item:last-child{border-bottom:0}
-.check{
-  flex:0 0 26px;height:26px;width:26px;border-radius:50%;
-  border:2px solid #cfc9c2;display:flex;align-items:center;justify-content:center;
-  font-size:14px;color:#fff;transition:all .15s;
-}
+.check{flex:0 0 26px;height:26px;width:26px;border-radius:50%;border:2px solid #D8CDBB;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;transition:all .15s}
 .item.done .check{background:var(--green);border-color:var(--green)}
 .item-body{flex:1;min-width:0}
 .item-body b{display:block;font-size:15px;font-weight:600;line-height:1.3}
 .item-body span.d{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .item.done .item-body b{color:var(--muted);text-decoration:line-through}
-.chev{color:#cfc9c2;font-size:18px}
+.chev{color:#D8CDBB;font-size:18px}
 .empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:14px}
-/* Aggregierte Anzeige */
 .meta{display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap}
 .who{display:inline-flex;align-items:center}
-.av{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:700;margin-right:-5px;border:1.5px solid var(--card)}
-.av:last-child{margin-right:0}
+.who .av{width:21px;height:21px;font-size:9.5px;margin-right:-5px;border:1.5px solid var(--card)}
+.who .av:last-child{margin-right:0}
 .avg{font-size:11px;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
 .avg b{color:var(--text);font-weight:600}
+/* Karte */
+#map{height:calc(100vh - 64px - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:360px;margin:12px 14px;border-radius:16px;border:1px solid var(--line);z-index:1}
+.leaflet-popup-content{font-family:inherit;font-size:14px}
+.leaflet-popup-content b{display:block;margin-bottom:3px}
+.leaflet-popup-content a{color:var(--bordeaux);font-weight:700;text-decoration:none}
+/* Placeholder screens */
+.ph{padding:60px 30px;text-align:center;color:var(--muted)}
+.ph .ic{font-size:40px}
+.ph h2{font-size:19px;color:var(--text);font-weight:700;margin:12px 0 6px}
+.ph p{font-size:14px;line-height:1.5;max-width:300px;margin:0 auto}
+.ph .badge-soon{display:inline-block;background:var(--gold-soft);color:#7A5A12;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;margin-top:14px}
 /* Detail-Sheet */
-.backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;
-  opacity:0;pointer-events:none;transition:opacity .25s;
-}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:50;
-  background:var(--bg);border-radius:20px 20px 0 0;
-  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  transform:translateY(105%);transition:transform .3s cubic-bezier(.3,.7,.3,1);
-  padding:10px 18px calc(24px + env(safe-area-inset-bottom));
-}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bg);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateY(105%);transition:transform .3s cubic-bezier(.3,.7,.3,1);padding:10px 18px calc(24px + env(safe-area-inset-bottom))}
 .sheet.open{transform:translateY(0)}
-.grip{width:38px;height:4px;border-radius:2px;background:#d5d0c9;margin:4px auto 14px}
-.badge{
-  display:inline-block;font-size:12px;font-weight:600;color:var(--red);
-  background:rgba(179,32,60,.1);border-radius:999px;padding:4px 10px;margin-bottom:8px;
-}
+.grip{width:38px;height:4px;border-radius:2px;background:#DCD2C2;margin:4px auto 14px}
+.badge{display:inline-block;font-size:12px;font-weight:600;color:var(--bordeaux);background:var(--bordeaux-soft);border-radius:999px;padding:4px 10px;margin-bottom:8px}
 .sheet h2{font-size:22px;font-weight:700;line-height:1.25}
-.sheet p.desc{font-size:15px;line-height:1.5;color:#444;margin:10px 0 4px}
+.sheet p.desc{font-size:15px;line-height:1.5;color:#5A4A3A;margin:10px 0 4px}
 .sheet p.addr{font-size:13.5px;color:var(--muted);margin:6px 0 14px}
-.map{
-  width:100%;height:240px;border:0;border-radius:14px;background:#e6e2dc;display:block;
-}
+.smap{width:100%;height:240px;border:0;border-radius:14px;background:#EDE6DA;display:block}
 .btn-row{display:flex;gap:10px;margin-top:14px}
-.btn{
-  flex:1;border:0;border-radius:13px;padding:14px 10px;font-size:15px;font-weight:700;
-  cursor:pointer;text-align:center;text-decoration:none;display:block;
-}
+.btn{flex:1;border:0;border-radius:13px;padding:14px 10px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block}
 .btn.check-btn{background:var(--card);border:1.5px solid var(--line);color:var(--text)}
 .btn.check-btn.done{background:var(--green);border-color:var(--green);color:#fff}
-.btn.maps{background:var(--red);color:#fff}
+.btn.maps{background:var(--bordeaux);color:#fff}
 .rating{display:flex;align-items:center;gap:2px;margin-top:14px}
 .rating .rlabel{font-size:13px;color:var(--muted);margin-right:8px}
 .rating .glass{border:0;background:none;font-size:27px;opacity:.22;cursor:pointer;padding:2px;filter:grayscale(1)}
 .rating .glass.on{opacity:1;filter:none}
-/* Personen-Box im Sheet */
 .peoplebox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:16px}
 .peoplebox h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:.4px}
 .prow{display:flex;align-items:center;gap:9px;font-size:14px;margin:7px 0}
 .prow .nm{flex:1}
 .prow .gl{letter-spacing:1px}
 .pnone{font-size:13.5px;color:var(--muted)}
-.pavg{margin-top:9px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pavg{margin-top:9px;padding-top:9px;border-top:1px solid var(--line2);font-size:13px;color:var(--muted)}
 .pavg b{color:var(--text)}
-#map{display:none;height:62vh;min-height:340px;margin:10px 14px;border-radius:16px;border:1px solid var(--line);z-index:1}
-body.mapview #map{display:block}
-body.mapview main{display:none}
-.leaflet-popup-content{font-family:inherit;font-size:14px}
-.leaflet-popup-content b{display:block;margin-bottom:3px}
-.leaflet-popup-content a{color:var(--red);font-weight:700;text-decoration:none}
-footer{padding:22px 18px 40px;text-align:center}
-.me-row{font-size:13px;color:var(--muted)}
-.me-row b{color:var(--text)}
-.me-row button{border:0;background:none;color:var(--red);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
-/* Profil-/Join-Overlay */
+/* Bottom-Navigation */
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:7px 4px calc(7px + env(safe-area-inset-bottom))}
+.navbtn{flex:1;border:0;background:none;text-align:center;color:#B3A48E;cursor:pointer;padding:2px 0}
+.navbtn .ic{font-size:21px;line-height:1}
+.navbtn .lb{display:block;font-size:10.5px;margin-top:3px}
+.navbtn.active{color:var(--bordeaux)}
+.navbtn.active .lb{font-weight:600}
+/* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
 .overlay .logo{font-size:34px;margin-bottom:14px}
 .overlay h2{font-size:23px;font-weight:700;margin-bottom:8px}
 .overlay p{color:var(--muted);font-size:14.5px;line-height:1.5;margin-bottom:24px;max-width:320px}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:330px}
-.pbtn{display:flex;flex-direction:column;align-items:center;gap:11px;padding:20px 10px;background:var(--card);border:1px solid var(--line);border-radius:18px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);transition:transform .1s}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:11px;padding:20px 10px;background:var(--card);border:1px solid var(--line);border-radius:18px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text)}
 .pbtn:active{transform:scale(.96)}
 .pbtn .bigav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:21px;font-weight:700}
-.synced{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.85);margin-top:7px}
-.synced .dot{width:7px;height:7px;border-radius:50%;background:#9be7b4}
-.synced.off .dot{background:#ffd27f}
+.profswitch{font-size:12px;color:var(--muted);text-align:center;padding:6px 0 2px}
+.profswitch button{border:0;background:none;color:var(--bordeaux);font-size:12px;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🍷 Mainz Bucket List</h1>
-  <div class="progress-row">
-    <div class="progress-bar"><i id="totalbar"></i></div>
-    <div class="progress-label" id="totallabel"></div>
+<div class="appbar">
+  <div>
+    <div class="brand"><span class="g">🍷</span> Agraffen</div>
+    <div class="sync" id="sync"><span class="dot"></span><span id="synctxt">verbinde…</span></div>
   </div>
-  <div class="synced" id="synced"><span class="dot"></span><span id="syncedtxt">verbinde…</span></div>
-</header>
-
-<nav class="tabs" id="tabs"></nav>
-
-<div class="controls">
-  <input class="search" id="search" type="search" placeholder="Suchen…">
-  <div class="seg" id="seg">
-    <button data-f="alle" class="active">Alle</button>
-    <button data-f="offen">Offen</button>
-    <button data-f="done">Erledigt</button>
-  </div>
-  <div class="seg" id="viewseg">
-    <button data-v="liste" class="active">📋 Liste</button>
-    <button data-v="karte">🗺️ Karte</button>
-  </div>
+  <div class="agchip" id="agchip">0 Agraffen</div>
 </div>
 
-<div id="map"></div>
-<main id="main"></main>
+<section id="s-home" class="screen active"></section>
 
-<footer>
-  <div class="me-row" id="merow"></div>
-</footer>
+<section id="s-liste" class="screen">
+  <nav class="tabs" id="tabs"></nav>
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="Suchen…">
+    <div class="seg" id="seg">
+      <button data-f="alle" class="active">Alle</button>
+      <button data-f="offen">Offen</button>
+      <button data-f="done">Erledigt</button>
+    </div>
+  </div>
+  <main id="main"></main>
+</section>
+
+<section id="s-karte" class="screen">
+  <div id="map"></div>
+</section>
+
+<section id="s-termine" class="screen">
+  <div class="ph">
+    <div class="ic">📅</div>
+    <h2>Termine</h2>
+    <p>Bald könnt ihr hier Orte und Termine vorschlagen, gemeinsam abstimmen und den Treffpunkt als Kalender-Eintrag aufs Handy laden.</p>
+    <div class="badge-soon">kommt in Phase 3</div>
+  </div>
+</section>
+
+<section id="s-chat" class="screen">
+  <div class="ph">
+    <div class="ic">💬</div>
+    <h2>Chat</h2>
+    <p>Bald: euer verschlüsselter Gruppen-Chat – direkt in der App, nur für die Agraffen.</p>
+    <div class="badge-soon">kommt in Phase 4</div>
+  </div>
+</section>
+
+<nav class="bottomnav" id="bottomnav">
+  <button class="navbtn active" data-s="home"><span class="ic">🏠</span><span class="lb">Home</span></button>
+  <button class="navbtn" data-s="liste"><span class="ic">📋</span><span class="lb">Liste</span></button>
+  <button class="navbtn" data-s="karte"><span class="ic">🗺️</span><span class="lb">Karte</span></button>
+  <button class="navbtn" data-s="termine"><span class="ic">📅</span><span class="lb">Termine</span></button>
+  <button class="navbtn" data-s="chat"><span class="ic">💬</span><span class="lb">Chat</span></button>
+</nav>
 
 <div class="backdrop" id="backdrop"></div>
 <div class="sheet" id="sheet"></div>
@@ -522,13 +542,8 @@ const GEO={"Schwarzlichthelden Minigolf":[49.99654,8.27729],"Minigolf im Volkspa
 const slug = s => s.toLowerCase().replace(/[^a-z0-9äöüß]+/g,"-").replace(/^-|-$/g,"");
 const DATA = RAW.map(r=>({id:slug(r[0])+"-"+r[1].slice(0,3), name:r[0], cat:r[1], desc:r[2], addr:r[3], geo:GEO[r[0]]||[49.9929,8.2473]}));
 
-// ======== Identität: Gruppen-Code + Profil ========
+// ======== Identität ========
 (function(){
-  // Code aus dem Einladungslink lesen und merken.
-  // Wichtig: Der #join-Code bleibt bewusst in der URL stehen, damit ein zum
-  // Home-Bildschirm hinzugefügtes Icon (eigener Speicher, getrennt von Safari)
-  // den Code mitspeichert und die App auch dort freischaltet.
-  // Der Hash wird nie an einen Server übertragen.
   try{
     const h=(location.hash||"").match(/join=([^&]+)/);
     if(h){ localStorage.setItem("ag-code", decodeURIComponent(h[1])); }
@@ -537,7 +552,7 @@ const DATA = RAW.map(r=>({id:slug(r[0])+"-"+r[1].slice(0,3), name:r[0], cat:r[1]
 let groupCode = localStorage.getItem("ag-code") || "";
 let profile   = localStorage.getItem("ag-profile") || "";
 
-// ======== Verschlüsselung (AES-256-GCM, Schlüssel aus Gruppen-Code) ========
+// ======== Verschlüsselung ========
 const APP_SALT = "agraffen-mainz-bucketlist-v2";
 const te = new TextEncoder(), td = new TextDecoder();
 const b64  = arr => btoa(String.fromCharCode.apply(null, arr));
@@ -565,9 +580,10 @@ async function decryptObj(key,blob){
 }
 
 // ======== Daten / State ========
-let done={}, ratings={};          // mein eigener Stand
-let members={};                   // name -> {done:{}, ratings:{}}
+let done={}, ratings={};
+let members={};
 let cryptoKey=null, dbPath="", membersRef=null;
+let activeCat="alle", filter="alle", query="", screen="home";
 
 function loadLocal(){
   try{ const o=JSON.parse(localStorage.getItem("ag-data-"+profile)||"{}"); done=o.done||{}; ratings=o.ratings||{}; }
@@ -575,16 +591,16 @@ function loadLocal(){
   members[profile]={done:{...done}, ratings:{...ratings}};
 }
 function save(){
-  try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings})); }catch(e){}
+  try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:Date.now()})); }catch(e){}
   members[profile]={done:{...done}, ratings:{...ratings}};
   pushMine();
 }
 
 // ======== Firebase-Sync ========
 function setSync(on,txt){
-  const el=document.getElementById("synced"); if(!el)return;
+  const el=document.getElementById("sync"); if(!el)return;
   el.classList.toggle("off",!on);
-  document.getElementById("syncedtxt").textContent=txt;
+  document.getElementById("synctxt").textContent=txt;
 }
 function sameMap(a,b){const ka=Object.keys(a),kb=Object.keys(b);if(ka.length!==kb.length)return false;return ka.every(k=>a[k]===b[k]);}
 function initFirebase(){
@@ -600,13 +616,11 @@ function initFirebase(){
       const dec=await decryptObj(cryptoKey, val[name]);
       if(!dec) continue;
       if(name===profile){
-        // Eigenes Profil über Geräte hinweg ZUSAMMENFÜHREN statt überschreiben,
-        // damit nichts verloren geht (z. B. Handy + Desktop unter gleichem Namen).
         const rd=dec.done||{}, rr=dec.ratings||{};
         done={...rd, ...done};
         ratings={...rr, ...ratings};
         try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:Date.now()})); }catch(e){}
-        if(!(sameMap(done,rd)&&sameMap(ratings,rr))) pushNeeded=true; // lokal hat Daten, die der Cloud fehlen
+        if(!(sameMap(done,rd)&&sameMap(ratings,rr))) pushNeeded=true;
         next[profile]={done:{...done}, ratings:{...ratings}};
       } else {
         next[name]={done:dec.done||{}, ratings:dec.ratings||{}};
@@ -627,18 +641,83 @@ function pushMine(){
   if(!membersRef||!cryptoKey) return;
   clearTimeout(pushT);
   pushT=setTimeout(async()=>{
-    try{ const blob=await encryptObj(cryptoKey,{done,ratings,updated:Date.now()}); membersRef.child(profile).set(blob); }
-    catch(e){}
+    try{ const blob=await encryptObj(cryptoKey,{done,ratings,updated:Date.now()}); membersRef.child(profile).set(blob); }catch(e){}
   },400);
 }
 
-// ======== Aggregation über alle Profile ========
+// ======== Aggregation ========
 function whoDone(id){ return MEMBERS.filter(n=>members[n]&&members[n].done&&members[n].done[id]); }
 function allRatings(id){ return MEMBERS.filter(n=>members[n]&&members[n].ratings&&members[n].ratings[id]).map(n=>({n, v:members[n].ratings[id]})); }
 function avgRating(id){ const a=allRatings(id); return a.length ? a.reduce((s,x)=>s+x.v,0)/a.length : 0; }
 function avatar(name){ return `<span class="av" style="background:${COLORS[name]||'#888'}" title="${name}">${INIT[name]||name[0]}</span>`; }
+function doneCountOf(name){ return members[name]&&members[name].done ? Object.keys(members[name].done).length : 0; }
+function agraffenCount(){
+  const c={};
+  MEMBERS.forEach(n=>{ const d=members[n]&&members[n].done||{}; for(const id in d){ c[id]=(c[id]||0)+1; } });
+  return Object.values(c).filter(x=>x>=2).length;
+}
 
-// ======== Tabs ========
+// ======== Navigation ========
+function setScreen(s){
+  screen=s;
+  document.querySelectorAll(".screen").forEach(el=>el.classList.toggle("active", el.id==="s-"+s));
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active", b.dataset.s===s));
+  if(s==="home") renderHome();
+  if(s==="liste"){ renderTabs(); renderMain(); }
+  if(s==="karte"){ initMap(); setTimeout(()=>{ map&&map.invalidateSize(); renderMap(); },90); }
+  window.scrollTo(0,0);
+}
+document.getElementById("bottomnav").querySelectorAll(".navbtn").forEach(b=>{
+  b.onclick=()=>setScreen(b.dataset.s);
+});
+
+// ======== Home ========
+function renderHome(){
+  const el=document.getElementById("s-home"); if(!el)return;
+  const total=DATA.length, mine=Object.keys(done).length;
+  const groupIds={}; MEMBERS.forEach(n=>{const d=members[n]&&members[n].done||{}; for(const id in d) groupIds[id]=1;});
+  const groupTotal=Object.keys(groupIds).length;
+  const rank=MEMBERS.map(n=>({n, c:doneCountOf(n)})).sort((a,b)=>b.c-a.c);
+  let h="";
+  h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
+
+  // 1) Event der Woche (Platzhalter)
+  h+=`<div class="hcard soon eventcard"><h3>🍷 Event der Woche <span class="badge-soon">bald</span></h3>
+      <div class="ttl">Dein persönliches Wochen-Highlight</div>
+      <p>Bald schlägt dir die App jede Woche ein Event in Mainz vor – passend zu deinen Bewertungen (z. B. ein Termin bei einem Winzer, den du top fandest).</p></div>`;
+
+  // 2) Korken knallen lassen (funktional)
+  h+=`<button class="cta" id="korken">🍾 Korken knallen lassen</button>
+      <div class="cta-sub">Würfelt einen offenen Ort für heute</div>`;
+
+  // 3) Nächster Termin (Platzhalter)
+  h+=`<div class="hcard soon"><h3>📅 Nächster Termin <span class="badge-soon">bald</span></h3>
+      <div class="ttl">Noch kein Termin geplant</div>
+      <p>Ab Phase 3 könnt ihr hier Treffen vorschlagen, abstimmen und den Termin in den Kalender laden.</p></div>`;
+
+  // 4) Ranking (funktional)
+  h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
+  rank.forEach((r,i)=>{
+    h+=`<div class="rank-row"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
+  });
+  h+=`</div>`;
+
+  // 5) Abstimmungen / Aufgaben (Platzhalter)
+  h+=`<div class="hcard soon"><h3>🗳️ Abstimmungen <span class="badge-soon">bald</span></h3>
+      <div class="ttl">Gemeinsam entscheiden</div>
+      <p>Hier kommen eure Gruppen-Abstimmungen rein – „Wohin als Nächstes?", „Welches Weingut?" – jede:r stimmt ab, die App zählt aus.</p></div>`;
+
+  el.innerHTML=h;
+  const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
+}
+function korkenRoulette(){
+  const open=DATA.filter(d=>!done[d.id]);
+  if(!open.length){ alert("Ihr habt schon alles erlebt! 🎉"); return; }
+  const pick=open[Math.floor(Math.random()*open.length)];
+  openSheet(pick.id);
+}
+
+// ======== Liste ========
 function renderTabs(){
   const t=document.getElementById("tabs");
   let html=`<button class="tab ${activeCat==="alle"?"active":""}" data-c="alle">Alle <small>${countDone("alle")}/${countAll("alle")}</small></button>`;
@@ -646,13 +725,10 @@ function renderTabs(){
     html+=`<button class="tab ${activeCat===c?"active":""}" data-c="${c}">${CATS[c].emoji} ${CATS[c].label} <small>${countDone(c)}/${countAll(c)}</small></button>`;
   }
   t.innerHTML=html;
-  t.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeCat=b.dataset.c;render();});
+  t.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeCat=b.dataset.c;renderTabs();renderMain();});
 }
 const countAll=c=>DATA.filter(d=>c==="alle"||d.cat===c).length;
 const countDone=c=>DATA.filter(d=>(c==="alle"||d.cat===c)&&done[d.id]).length;
-
-// ======== Liste ========
-let activeCat="alle", filter="alle", query="", view="liste";
 function matches(d){
   if(activeCat!=="alle"&&d.cat!==activeCat)return false;
   if(filter==="offen"&&done[d.id])return false;
@@ -693,18 +769,22 @@ function renderMain(){
       else openSheet(id);
     };
   });
-  if(view==="karte"&&map)renderMap();
 }
-function renderHeader(){
-  const a=countAll("alle"),d=countDone("alle");
-  document.getElementById("totalbar").style.width=(a?100*d/a:0)+"%";
-  document.getElementById("totallabel").textContent=`${d} / ${a}`;
+function updateAppbar(){
+  const c=document.getElementById("agchip"); if(c) c.textContent=agraffenCount()+" Agraffen";
 }
-function render(){ renderTabs(); renderMain(); renderHeader(); }
+function render(){
+  renderTabs();
+  if(screen==="liste") renderMain();
+  if(screen==="home") renderHome();
+  if(screen==="karte"&&map) renderMap();
+  updateAppbar();
+}
 
 function toggle(id){
   if(done[id])delete done[id]; else done[id]=1;
-  save(); render();
+  save();
+  renderTabs(); renderMain(); updateAppbar();
   const sheet=document.getElementById("sheet");
   if(sheet.classList.contains("open")&&sheet.dataset.id===id){ updateSheetBtn(id); renderPeople(id); }
 }
@@ -721,7 +801,7 @@ function openSheet(id){
     <h2>${d.name}</h2>
     <p class="desc">${d.desc}</p>
     <p class="addr">📍 ${d.addr}</p>
-    <iframe class="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+    <iframe class="smap" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
       src="https://maps.google.com/maps?q=${q}&z=15&output=embed"></iframe>
     <div class="rating" id="rating"></div>
     <div class="peoplebox" id="peoplebox"></div>
@@ -773,7 +853,7 @@ function closeSheet(){
 }
 document.getElementById("backdrop").onclick=closeSheet;
 
-// ======== Kartenansicht ========
+// ======== Karte ========
 let map=null, markerLayer=null, lastFitKey="";
 function initMap(){
   if(map||typeof L==="undefined")return;
@@ -788,7 +868,7 @@ function renderMap(){
   const pts=[];
   DATA.filter(matches).forEach(d=>{
     const who=whoDone(d.id);
-    const m=L.circleMarker(d.geo,{radius:8,color:"#fff",weight:2,fillColor:done[d.id]?"#2e9e5b":"#b3203c",fillOpacity:.95});
+    const m=L.circleMarker(d.geo,{radius:8,color:"#fff",weight:2,fillColor:done[d.id]?"#3B8C66":"#7A2740",fillOpacity:.95});
     const av=who.length?who.map(avatar).join("")+"<br>":"";
     m.bindPopup(`<b>${done[d.id]?"✓ ":""}${d.name}</b>${av}<a href="#" onclick="openSheet('${d.id}');return false;">Details ›</a>`);
     m.addTo(markerLayer); pts.push(d.geo);
@@ -796,14 +876,6 @@ function renderMap(){
   const fitKey=activeCat+"|"+filter+"|"+query;
   if(pts.length&&fitKey!==lastFitKey){ map.fitBounds(pts,{padding:[28,28],maxZoom:15}); lastFitKey=fitKey; }
 }
-document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{
-  b.onclick=()=>{
-    view=b.dataset.v;
-    document.querySelectorAll("#viewseg button").forEach(x=>x.classList.toggle("active",x===b));
-    document.body.classList.toggle("mapview",view==="karte");
-    if(view==="karte"){ initMap(); setTimeout(()=>{map&&map.invalidateSize();renderMap();},80); }
-  };
-});
 
 // ======== Suche & Filter ========
 document.getElementById("search").oninput=e=>{query=e.target.value.trim().toLowerCase();renderMain();};
@@ -814,19 +886,6 @@ document.getElementById("seg").querySelectorAll("button").forEach(b=>{
     renderMain();
   };
 });
-
-// ======== Footer / Profil ========
-function updateFooter(){
-  const el=document.getElementById("merow"); if(!el)return;
-  el.innerHTML=`Angemeldet als <b>${profile}</b> · <button id="switch">Profil wechseln</button>`;
-  document.getElementById("switch").onclick=switchProfile;
-}
-function switchProfile(){
-  if(membersRef){ membersRef.off(); membersRef=null; }
-  localStorage.removeItem("ag-profile");
-  profile=""; done={}; ratings={}; members={};
-  showProfilePicker();
-}
 
 // ======== Overlays ========
 function showProfilePicker(){
@@ -845,6 +904,12 @@ function showJoinNeeded(){
     <p>Diese App gehört zur Agraffen-Gruppe. Öffne den Einladungslink, den du per WhatsApp bekommen hast – damit schaltet sich die App frei.</p>`;
   ov.classList.add("show");
 }
+function switchProfile(){
+  if(membersRef){ membersRef.off(); membersRef=null; }
+  localStorage.removeItem("ag-profile");
+  profile=""; done={}; ratings={}; members={};
+  showProfilePicker();
+}
 
 // ======== Boot ========
 async function boot(){
@@ -853,8 +918,8 @@ async function boot(){
   if(!profile){ showProfilePicker(); return; }
   loadLocal();
   ov.classList.remove("show");
-  updateFooter();
-  render();
+  setScreen("home");
+  updateAppbar();
   setSync(false,"verbinde…");
   try{
     cryptoKey=await deriveKey(groupCode);
