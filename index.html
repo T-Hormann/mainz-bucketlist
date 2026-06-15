@@ -586,6 +586,7 @@ function setSync(on,txt){
   el.classList.toggle("off",!on);
   document.getElementById("syncedtxt").textContent=txt;
 }
+function sameMap(a,b){const ka=Object.keys(a),kb=Object.keys(b);if(ka.length!==kb.length)return false;return ka.every(k=>a[k]===b[k]);}
 function initFirebase(){
   try{ if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); }
   catch(e){ setSync(false,"offline"); return; }
@@ -594,17 +595,32 @@ function initFirebase(){
   membersRef.on("value", async snap=>{
     const val=snap.val()||{};
     const next={};
+    let pushNeeded=false;
     for(const name in val){
-      if(name===profile) continue;
       const dec=await decryptObj(cryptoKey, val[name]);
-      if(dec) next[name]={done:dec.done||{}, ratings:dec.ratings||{}};
+      if(!dec) continue;
+      if(name===profile){
+        // Eigenes Profil über Geräte hinweg ZUSAMMENFÜHREN statt überschreiben,
+        // damit nichts verloren geht (z. B. Handy + Desktop unter gleichem Namen).
+        const rd=dec.done||{}, rr=dec.ratings||{};
+        done={...rd, ...done};
+        ratings={...rr, ...ratings};
+        try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings,updated:Date.now()})); }catch(e){}
+        if(!(sameMap(done,rd)&&sameMap(ratings,rr))) pushNeeded=true; // lokal hat Daten, die der Cloud fehlen
+        next[profile]={done:{...done}, ratings:{...ratings}};
+      } else {
+        next[name]={done:dec.done||{}, ratings:dec.ratings||{}};
+      }
     }
-    next[profile]={done:{...done}, ratings:{...ratings}};
+    if(!next[profile]){
+      next[profile]={done:{...done}, ratings:{...ratings}};
+      if(Object.keys(done).length||Object.keys(ratings).length) pushNeeded=true;
+    }
     members=next;
     setSync(true, MEMBERS.filter(n=>members[n]).length+" Profile · synchron");
     render();
+    if(pushNeeded) pushMine();
   }, err=>{ setSync(false,"offline"); });
-  pushMine();
 }
 let pushT=null;
 function pushMine(){
