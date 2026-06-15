@@ -19,58 +19,53 @@
   --line:#ECE3D3; --line2:#F2EADC;
   --bordeaux:#7A2740; --bordeaux-dark:#5E1D31; --bordeaux-soft:#F3E7EB;
   --gold:#B8901F; --gold-soft:#F1E7CC; --gold-line:#E4D2A4;
-  --green:#3B8C66;
+  --green:#3B8C66; --red:#B5532F;
   --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  background:var(--bg); color:var(--text);
-  padding-bottom:calc(64px + env(safe-area-inset-bottom));
-}
-/* App-Bar */
-.appbar{
-  position:sticky;top:0;z-index:20;background:var(--bg);
-  padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
-  border-bottom:1px solid var(--line);
-  display:flex;align-items:center;justify-content:space-between;
-}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+.appbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:var(--bordeaux);letter-spacing:.3px}
 .brand .g{font-size:18px}
 .agchip{background:var(--gold-soft);color:#7A5A12;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--gold-line)}
 .sync{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-top:2px}
 .sync .dot{width:7px;height:7px;border-radius:50%;background:#7ec9a0}
 .sync.off .dot{background:#e6c069}
-/* Screens */
 .screen{display:none}
 .screen.active{display:block}
-main,.pad{padding:12px 14px 24px}
+main{padding:12px 14px 24px}
 /* Home */
 .greet{padding:14px 16px 2px}
 .greet h2{font-size:17px;font-weight:700}
 .greet p{font-size:13px;color:var(--muted);margin-top:2px}
 .hcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin:12px 14px 0}
-.hcard h3{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
-.lead{border-left:3px solid var(--bordeaux)}
+.hcard h3{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;display:flex;align-items:center;gap:7px}
 .soon{background:#FAF5EC;border:1px dashed var(--gold-line)}
-.soon .badge-soon{display:inline-block;background:var(--gold-soft);color:#7A5A12;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px}
-.soon p{font-size:13px;color:#8A7A60;line-height:1.45;margin-top:4px}
+.badge-soon{display:inline-block;background:var(--gold-soft);color:#7A5A12;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px}
+.soon p{font-size:13px;color:#8A7A60;line-height:1.45;margin-top:8px}
 .soon .ttl{font-size:15px;font-weight:600;color:var(--text)}
-.progress-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
-.bar{height:9px;background:#F0E7D6;border-radius:5px;margin:8px 0 4px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--gold);border-radius:5px;transition:width .4s}
-.cta{width:100%;margin:12px 14px 0;width:calc(100% - 28px);background:var(--gold);color:#fff;border:0;border-radius:14px;padding:15px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.cta{margin:12px 14px 0;width:calc(100% - 28px);background:var(--gold);color:#fff;border:0;border-radius:14px;padding:15px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.cta svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .cta:active{transform:scale(.98)}
 .cta-sub{text-align:center;font-size:11.5px;color:var(--muted);margin-top:5px}
-.eventcard .ttl{font-size:15px;font-weight:600}
 .rank-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)}
 .rank-row:last-child{border-bottom:0}
 .rank-row .pos{width:18px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rank-row .nm{flex:1;font-size:14.5px}
 .rank-row .ct{font-size:13px;color:var(--bordeaux);font-weight:600}
 .av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;font-weight:700;flex:0 0 auto}
-/* Liste */
+/* Kasse (Splitwise-Mockup) */
+.kasse{margin-top:6px}
+.krow{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:14px}
+.krow:last-child{border-bottom:0}
+.krow .txt{flex:1}
+.krow .amt{font-weight:600;font-variant-numeric:tabular-nums}
+.amt.plus{color:var(--green)}
+.amt.minus{color:var(--red)}
+.kbtn{margin-top:11px;width:100%;background:#fff;border:1.5px solid var(--gold-line);color:#7A5A12;border-radius:12px;padding:11px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.kbtn svg{width:17px;height:17px;stroke:#7A5A12;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Bucket List */
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer}
@@ -103,17 +98,16 @@ main,.pad{padding:12px 14px 24px}
 .who .av:last-child{margin-right:0}
 .avg{font-size:11px;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
 .avg b{color:var(--text);font-weight:600}
-/* Karte */
-#map{height:calc(100vh - 64px - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:360px;margin:12px 14px;border-radius:16px;border:1px solid var(--line);z-index:1}
+#map{display:none;height:calc(100vh - 240px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:340px;margin:10px 14px;border-radius:16px;border:1px solid var(--line);z-index:1}
 .leaflet-popup-content{font-family:inherit;font-size:14px}
 .leaflet-popup-content b{display:block;margin-bottom:3px}
 .leaflet-popup-content a{color:var(--bordeaux);font-weight:700;text-decoration:none}
 /* Placeholder screens */
 .ph{padding:60px 30px;text-align:center;color:var(--muted)}
-.ph .ic{font-size:40px}
-.ph h2{font-size:19px;color:var(--text);font-weight:700;margin:12px 0 6px}
+.ph .ic{width:46px;height:46px;margin:0 auto;stroke:var(--bordeaux);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.ph h2{font-size:19px;color:var(--text);font-weight:700;margin:14px 0 6px}
 .ph p{font-size:14px;line-height:1.5;max-width:300px;margin:0 auto}
-.ph .badge-soon{display:inline-block;background:var(--gold-soft);color:#7A5A12;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;margin-top:14px}
+.ph .badge-soon{margin-top:14px;font-size:11px;padding:3px 10px}
 /* Detail-Sheet */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
@@ -143,9 +137,9 @@ main,.pad{padding:12px 14px 24px}
 .pavg{margin-top:9px;padding-top:9px;border-top:1px solid var(--line2);font-size:13px;color:var(--muted)}
 .pavg b{color:var(--text)}
 /* Bottom-Navigation */
-.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:7px 4px calc(7px + env(safe-area-inset-bottom))}
-.navbtn{flex:1;border:0;background:none;text-align:center;color:#B3A48E;cursor:pointer;padding:2px 0}
-.navbtn .ic{font-size:21px;line-height:1}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
+.navbtn{flex:1;border:0;background:none;text-align:center;color:#B0A188;cursor:pointer;padding:0}
+.navbtn svg{width:23px;height:23px;display:block;margin:0 auto;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .navbtn .lb{display:block;font-size:10.5px;margin-top:3px}
 .navbtn.active{color:var(--bordeaux)}
 .navbtn.active .lb{font-weight:600}
@@ -159,8 +153,6 @@ main,.pad{padding:12px 14px 24px}
 .pbtn{display:flex;flex-direction:column;align-items:center;gap:11px;padding:20px 10px;background:var(--card);border:1px solid var(--line);border-radius:18px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text)}
 .pbtn:active{transform:scale(.96)}
 .pbtn .bigav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:21px;font-weight:700}
-.profswitch{font-size:12px;color:var(--muted);text-align:center;padding:6px 0 2px}
-.profswitch button{border:0;background:none;color:var(--bordeaux);font-size:12px;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
@@ -175,7 +167,7 @@ main,.pad{padding:12px 14px 24px}
 
 <section id="s-home" class="screen active"></section>
 
-<section id="s-liste" class="screen">
+<section id="s-bucket" class="screen">
   <nav class="tabs" id="tabs"></nav>
   <div class="controls">
     <input class="search" id="search" type="search" placeholder="Suchen…">
@@ -184,38 +176,48 @@ main,.pad{padding:12px 14px 24px}
       <button data-f="offen">Offen</button>
       <button data-f="done">Erledigt</button>
     </div>
+    <div class="seg" id="viewseg">
+      <button data-v="liste" class="active">Liste</button>
+      <button data-v="karte">Karte</button>
+    </div>
   </div>
   <main id="main"></main>
-</section>
-
-<section id="s-karte" class="screen">
   <div id="map"></div>
 </section>
 
-<section id="s-termine" class="screen">
+<section id="s-events" class="screen">
   <div class="ph">
-    <div class="ic">📅</div>
-    <h2>Termine</h2>
-    <p>Bald könnt ihr hier Orte und Termine vorschlagen, gemeinsam abstimmen und den Treffpunkt als Kalender-Eintrag aufs Handy laden.</p>
-    <div class="badge-soon">kommt in Phase 3</div>
+    <svg class="ic" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+    <h2>Events in Mainz</h2>
+    <p>Bald siehst du hier, was die nächsten Wochen in Mainz läuft – automatisch aktualisiert, und jedes Event lässt sich mit einem Tipp zum Trip machen.</p>
+    <div class="badge-soon">kommt bald</div>
+  </div>
+</section>
+
+<section id="s-trips" class="screen">
+  <div class="ph">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14"/></svg>
+    <h2>Trips</h2>
+    <p>Bald könnt ihr hier gemeinsame Ausflüge vorschlagen, Termine abstimmen und den fixen Treffpunkt als Kalender-Eintrag aufs Handy laden.</p>
+    <div class="badge-soon">kommt bald</div>
   </div>
 </section>
 
 <section id="s-chat" class="screen">
   <div class="ph">
-    <div class="ic">💬</div>
+    <svg class="ic" viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 20.5 12z"/></svg>
     <h2>Chat</h2>
     <p>Bald: euer verschlüsselter Gruppen-Chat – direkt in der App, nur für die Agraffen.</p>
-    <div class="badge-soon">kommt in Phase 4</div>
+    <div class="badge-soon">kommt bald</div>
   </div>
 </section>
 
 <nav class="bottomnav" id="bottomnav">
-  <button class="navbtn active" data-s="home"><span class="ic">🏠</span><span class="lb">Home</span></button>
-  <button class="navbtn" data-s="liste"><span class="ic">📋</span><span class="lb">Liste</span></button>
-  <button class="navbtn" data-s="karte"><span class="ic">🗺️</span><span class="lb">Karte</span></button>
-  <button class="navbtn" data-s="termine"><span class="ic">📅</span><span class="lb">Termine</span></button>
-  <button class="navbtn" data-s="chat"><span class="ic">💬</span><span class="lb">Chat</span></button>
+  <button class="navbtn active" data-s="home"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/></svg><span class="lb">Home</span></button>
+  <button class="navbtn" data-s="bucket"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17"/></svg><span class="lb">Bucket List</span></button>
+  <button class="navbtn" data-s="events"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg><span class="lb">Events</span></button>
+  <button class="navbtn" data-s="trips"><svg viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14"/></svg><span class="lb">Trips</span></button>
+  <button class="navbtn" data-s="chat"><svg viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 20.5 12z"/></svg><span class="lb">Chat</span></button>
 </nav>
 
 <div class="backdrop" id="backdrop"></div>
@@ -583,7 +585,7 @@ async function decryptObj(key,blob){
 let done={}, ratings={};
 let members={};
 let cryptoKey=null, dbPath="", membersRef=null;
-let activeCat="alle", filter="alle", query="", screen="home";
+let activeCat="alle", filter="alle", query="", screen="home", view="liste";
 
 function loadLocal(){
   try{ const o=JSON.parse(localStorage.getItem("ag-data-"+profile)||"{}"); done=o.done||{}; ratings=o.ratings||{}; }
@@ -663,13 +665,20 @@ function setScreen(s){
   document.querySelectorAll(".screen").forEach(el=>el.classList.toggle("active", el.id==="s-"+s));
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active", b.dataset.s===s));
   if(s==="home") renderHome();
-  if(s==="liste"){ renderTabs(); renderMain(); }
-  if(s==="karte"){ initMap(); setTimeout(()=>{ map&&map.invalidateSize(); renderMap(); },90); }
+  if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
   window.scrollTo(0,0);
 }
 document.getElementById("bottomnav").querySelectorAll(".navbtn").forEach(b=>{
   b.onclick=()=>setScreen(b.dataset.s);
 });
+function setView(v){
+  view=v;
+  document.querySelectorAll("#viewseg button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
+  document.getElementById("main").style.display = v==="liste"?"":"none";
+  document.getElementById("map").style.display   = v==="karte"?"block":"none";
+  if(v==="karte"){ initMap(); setTimeout(()=>{ map&&map.invalidateSize(); renderMap(); },80); }
+}
+document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
 // ======== Home ========
 function renderHome(){
@@ -681,19 +690,19 @@ function renderHome(){
   let h="";
   h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
 
-  // 1) Event der Woche (Platzhalter)
-  h+=`<div class="hcard soon eventcard"><h3>🍷 Event der Woche <span class="badge-soon">bald</span></h3>
+  // 1) Event der Woche
+  h+=`<div class="hcard soon"><h3>🍷 Event der Woche <span class="badge-soon">bald</span></h3>
       <div class="ttl">Dein persönliches Wochen-Highlight</div>
-      <p>Bald schlägt dir die App jede Woche ein Event in Mainz vor – passend zu deinen Bewertungen (z. B. ein Termin bei einem Winzer, den du top fandest).</p></div>`;
+      <p>Bald schlägt dir die App jede Woche ein Event in Mainz vor – passend zu deinen Bewertungen.</p></div>`;
 
   // 2) Korken knallen lassen (funktional)
-  h+=`<button class="cta" id="korken">🍾 Korken knallen lassen</button>
+  h+=`<button class="cta" id="korken"><svg viewBox="0 0 24 24"><path d="M14 4l6 6M9 9l6 6M4 20l5-1 8-8-4-4-8 8-1 5z"/></svg> Korken knallen lassen</button>
       <div class="cta-sub">Würfelt einen offenen Ort für heute</div>`;
 
-  // 3) Nächster Termin (Platzhalter)
-  h+=`<div class="hcard soon"><h3>📅 Nächster Termin <span class="badge-soon">bald</span></h3>
-      <div class="ttl">Noch kein Termin geplant</div>
-      <p>Ab Phase 3 könnt ihr hier Treffen vorschlagen, abstimmen und den Termin in den Kalender laden.</p></div>`;
+  // 3) Nächster Trip
+  h+=`<div class="hcard soon"><h3>🧭 Nächster Trip <span class="badge-soon">bald</span></h3>
+      <div class="ttl">Noch kein Trip geplant</div>
+      <p>Bald könnt ihr hier Ausflüge vorschlagen, abstimmen und den Termin in den Kalender laden.</p></div>`;
 
   // 4) Ranking (funktional)
   h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
@@ -702,7 +711,18 @@ function renderHome(){
   });
   h+=`</div>`;
 
-  // 5) Abstimmungen / Aufgaben (Platzhalter)
+  // 5) Gemeinsame Kasse (Splitwise-Mockup)
+  h+=`<div class="hcard soon"><h3>💶 Gemeinsame Kasse <span class="badge-soon">Vorschau</span></h3>
+      <div class="ttl">Ausgaben fair teilen</div>
+      <div class="kasse">
+        <div class="krow">${avatar("Kirsten")}<span class="txt">Kirsten hat ausgelegt · Weinprobe</span><span class="amt">50 €</span></div>
+        <div class="krow">${avatar("Tom")}<span class="txt">Du bekommst zurück</span><span class="amt plus">+12,50 €</span></div>
+        <div class="krow">${avatar("Kathrin")}<span class="txt">Kathrin schuldet der Kasse</span><span class="amt minus">−8,00 €</span></div>
+      </div>
+      <button class="kbtn" disabled><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ausgabe hinzufügen</button>
+      <p>Bald: Ausgaben eintragen, die App rechnet aus, wer wem was schuldet – wie Splitwise, nur für die Agraffen.</p></div>`;
+
+  // 6) Abstimmungen
   h+=`<div class="hcard soon"><h3>🗳️ Abstimmungen <span class="badge-soon">bald</span></h3>
       <div class="ttl">Gemeinsam entscheiden</div>
       <p>Hier kommen eure Gruppen-Abstimmungen rein – „Wohin als Nächstes?", „Welches Weingut?" – jede:r stimmt ab, die App zählt aus.</p></div>`;
@@ -717,7 +737,7 @@ function korkenRoulette(){
   openSheet(pick.id);
 }
 
-// ======== Liste ========
+// ======== Bucket List ========
 function renderTabs(){
   const t=document.getElementById("tabs");
   let html=`<button class="tab ${activeCat==="alle"?"active":""}" data-c="alle">Alle <small>${countDone("alle")}/${countAll("alle")}</small></button>`;
@@ -725,7 +745,7 @@ function renderTabs(){
     html+=`<button class="tab ${activeCat===c?"active":""}" data-c="${c}">${CATS[c].emoji} ${CATS[c].label} <small>${countDone(c)}/${countAll(c)}</small></button>`;
   }
   t.innerHTML=html;
-  t.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeCat=b.dataset.c;renderTabs();renderMain();});
+  t.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeCat=b.dataset.c;renderTabs();renderMain();if(view==="karte")renderMap();});
 }
 const countAll=c=>DATA.filter(d=>c==="alle"||d.cat===c).length;
 const countDone=c=>DATA.filter(d=>(c==="alle"||d.cat===c)&&done[d.id]).length;
@@ -774,17 +794,16 @@ function updateAppbar(){
   const c=document.getElementById("agchip"); if(c) c.textContent=agraffenCount()+" Agraffen";
 }
 function render(){
-  renderTabs();
-  if(screen==="liste") renderMain();
+  if(screen==="bucket"){ renderTabs(); renderMain(); if(view==="karte"&&map) renderMap(); }
   if(screen==="home") renderHome();
-  if(screen==="karte"&&map) renderMap();
   updateAppbar();
 }
 
 function toggle(id){
   if(done[id])delete done[id]; else done[id]=1;
   save();
-  renderTabs(); renderMain(); updateAppbar();
+  if(screen==="bucket"){ renderTabs(); renderMain(); if(view==="karte")renderMap(); }
+  updateAppbar();
   const sheet=document.getElementById("sheet");
   if(sheet.classList.contains("open")&&sheet.dataset.id===id){ updateSheetBtn(id); renderPeople(id); }
 }
@@ -878,12 +897,12 @@ function renderMap(){
 }
 
 // ======== Suche & Filter ========
-document.getElementById("search").oninput=e=>{query=e.target.value.trim().toLowerCase();renderMain();};
+document.getElementById("search").oninput=e=>{query=e.target.value.trim().toLowerCase();renderMain();if(view==="karte")renderMap();};
 document.getElementById("seg").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{
     filter=b.dataset.f;
     document.querySelectorAll("#seg button").forEach(x=>x.classList.toggle("active",x===b));
-    renderMain();
+    renderMain(); if(view==="karte")renderMap();
   };
 });
 
@@ -903,12 +922,6 @@ function showJoinNeeded(){
   ov.innerHTML=`<div class="logo">🔒</div><h2>Einladungslink nötig</h2>
     <p>Diese App gehört zur Agraffen-Gruppe. Öffne den Einladungslink, den du per WhatsApp bekommen hast – damit schaltet sich die App frei.</p>`;
   ov.classList.add("show");
-}
-function switchProfile(){
-  if(membersRef){ membersRef.off(); membersRef=null; }
-  localStorage.removeItem("ag-profile");
-  profile=""; done={}; ratings={}; members={};
-  showProfilePicker();
 }
 
 // ======== Boot ========
