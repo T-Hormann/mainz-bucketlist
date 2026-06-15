@@ -11,6 +11,8 @@
 <link rel="icon" type="image/png" href="icon-512.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
   --red:#b3203c; --red-dark:#8e1830;
@@ -81,10 +83,17 @@ main{padding:10px 14px 40px}
 .item.done .check{background:var(--green);border-color:var(--green)}
 .item-body{flex:1;min-width:0}
 .item-body b{display:block;font-size:15px;font-weight:600;line-height:1.3}
-.item-body span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.item-body span.d{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .item.done .item-body b{color:var(--muted);text-decoration:line-through}
 .chev{color:#cfc9c2;font-size:18px}
 .empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:14px}
+/* Aggregierte Anzeige */
+.meta{display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap}
+.who{display:inline-flex;align-items:center}
+.av{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:700;margin-right:-5px;border:1.5px solid var(--card)}
+.av:last-child{margin-right:0}
+.avg{font-size:11px;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
+.avg b{color:var(--text);font-weight:600}
 /* Detail-Sheet */
 .backdrop{
   position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;
@@ -122,17 +131,38 @@ main{padding:10px 14px 40px}
 .rating .rlabel{font-size:13px;color:var(--muted);margin-right:8px}
 .rating .glass{border:0;background:none;font-size:27px;opacity:.22;cursor:pointer;padding:2px;filter:grayscale(1)}
 .rating .glass.on{opacity:1;filter:none}
-.rrow{font-size:11px;letter-spacing:1px;display:block;margin-top:2px}
+/* Personen-Box im Sheet */
+.peoplebox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:16px}
+.peoplebox h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:.4px}
+.prow{display:flex;align-items:center;gap:9px;font-size:14px;margin:7px 0}
+.prow .nm{flex:1}
+.prow .gl{letter-spacing:1px}
+.pnone{font-size:13.5px;color:var(--muted)}
+.pavg{margin-top:9px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pavg b{color:var(--text)}
 #map{display:none;height:62vh;min-height:340px;margin:10px 14px;border-radius:16px;border:1px solid var(--line);z-index:1}
 body.mapview #map{display:block}
 body.mapview main{display:none}
 .leaflet-popup-content{font-family:inherit;font-size:14px}
 .leaflet-popup-content b{display:block;margin-bottom:3px}
 .leaflet-popup-content a{color:var(--red);font-weight:700;text-decoration:none}
-footer{padding:24px 18px 40px;text-align:center}
-footer button{
-  border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px;
-}
+footer{padding:22px 18px 40px;text-align:center}
+.me-row{font-size:13px;color:var(--muted)}
+.me-row b{color:var(--text)}
+.me-row button{border:0;background:none;color:var(--red);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
+/* Profil-/Join-Overlay */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
+.overlay.show{display:flex}
+.overlay .logo{font-size:34px;margin-bottom:14px}
+.overlay h2{font-size:23px;font-weight:700;margin-bottom:8px}
+.overlay p{color:var(--muted);font-size:14.5px;line-height:1.5;margin-bottom:24px;max-width:320px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:330px}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:11px;padding:20px 10px;background:var(--card);border:1px solid var(--line);border-radius:18px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);transition:transform .1s}
+.pbtn:active{transform:scale(.96)}
+.pbtn .bigav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:21px;font-weight:700}
+.synced{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.85);margin-top:7px}
+.synced .dot{width:7px;height:7px;border-radius:50%;background:#9be7b4}
+.synced.off .dot{background:#ffd27f}
 </style>
 </head>
 <body>
@@ -143,6 +173,7 @@ footer button{
     <div class="progress-bar"><i id="totalbar"></i></div>
     <div class="progress-label" id="totallabel"></div>
   </div>
+  <div class="synced" id="synced"><span class="dot"></span><span id="syncedtxt">verbinde…</span></div>
 </header>
 
 <nav class="tabs" id="tabs"></nav>
@@ -164,13 +195,29 @@ footer button{
 <main id="main"></main>
 
 <footer>
-  <button id="backup">Fortschritt sichern / übertragen</button>
+  <div class="me-row" id="merow"></div>
 </footer>
 
 <div class="backdrop" id="backdrop"></div>
 <div class="sheet" id="sheet"></div>
+<div class="overlay" id="overlay"></div>
 
 <script>
+// ======== Agraffen-Konfiguration ========
+const MEMBERS = ["Tom","Kathrin","Kirsten","Johanna"];
+const COLORS  = {Tom:"#b3203c", Kathrin:"#C29A28", Kirsten:"#1D9E75", Johanna:"#534AB7"};
+const INIT    = {Tom:"To", Kathrin:"Ka", Kirsten:"Ki", Johanna:"Jo"};
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBD85VUmLe56ZvgdzhefcSMA7YGDLAL-gw",
+  authDomain: "agraffen55116.firebaseapp.com",
+  databaseURL: "https://agraffen55116-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "agraffen55116",
+  storageBucket: "agraffen55116.firebasestorage.app",
+  messagingSenderId: "659070779963",
+  appId: "1:659070779963:web:b57baebb52fb8daa26121e"
+};
+
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -475,17 +522,100 @@ const GEO={"Schwarzlichthelden Minigolf":[49.99654,8.27729],"Minigolf im Volkspa
 const slug = s => s.toLowerCase().replace(/[^a-z0-9äöüß]+/g,"-").replace(/^-|-$/g,"");
 const DATA = RAW.map(r=>({id:slug(r[0])+"-"+r[1].slice(0,3), name:r[0], cat:r[1], desc:r[2], addr:r[3], geo:GEO[r[0]]||[49.9929,8.2473]}));
 
-// ---- Persistenz ----
-const KEY="mainz-bucketlist-v1", RKEY="mainz-bucketlist-ratings-v1";
-let done={}, ratings={};
-try{ done=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ done={}; }
-try{ ratings=JSON.parse(localStorage.getItem(RKEY)||"{}"); }catch(e){ ratings={}; }
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify(done)); localStorage.setItem(RKEY,JSON.stringify(ratings)); }catch(e){} }
+// ======== Identität: Gruppen-Code + Profil ========
+(function(){
+  const h=(location.hash||"").match(/join=([^&]+)/);
+  if(h){ localStorage.setItem("ag-code", decodeURIComponent(h[1])); history.replaceState(null,"",location.pathname+location.search); }
+})();
+let groupCode = localStorage.getItem("ag-code") || "";
+let profile   = localStorage.getItem("ag-profile") || "";
 
-// ---- State ----
-let activeCat="alle", filter="alle", query="", view="liste";
+// ======== Verschlüsselung (AES-256-GCM, Schlüssel aus Gruppen-Code) ========
+const APP_SALT = "agraffen-mainz-bucketlist-v2";
+const te = new TextEncoder(), td = new TextDecoder();
+const b64  = arr => btoa(String.fromCharCode.apply(null, arr));
+const ub64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+async function deriveKey(code){
+  const base = await crypto.subtle.importKey("raw", te.encode(code), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt:te.encode(APP_SALT), iterations:150000, hash:"SHA-256"},
+    base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+}
+async function derivePath(code){
+  const buf = await crypto.subtle.digest("SHA-256", te.encode(APP_SALT+"|path|"+code));
+  return "g"+[...new Uint8Array(buf)].slice(0,16).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function encryptObj(key,obj){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, te.encode(JSON.stringify(obj)));
+  return {iv:b64(iv), ct:b64(new Uint8Array(ct))};
+}
+async function decryptObj(key,blob){
+  try{
+    const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:ub64(blob.iv)}, key, ub64(blob.ct));
+    return JSON.parse(td.decode(pt));
+  }catch(e){ return null; }
+}
 
-// ---- Tabs ----
+// ======== Daten / State ========
+let done={}, ratings={};          // mein eigener Stand
+let members={};                   // name -> {done:{}, ratings:{}}
+let cryptoKey=null, dbPath="", membersRef=null;
+
+function loadLocal(){
+  try{ const o=JSON.parse(localStorage.getItem("ag-data-"+profile)||"{}"); done=o.done||{}; ratings=o.ratings||{}; }
+  catch(e){ done={}; ratings={}; }
+  members[profile]={done:{...done}, ratings:{...ratings}};
+}
+function save(){
+  try{ localStorage.setItem("ag-data-"+profile, JSON.stringify({done,ratings})); }catch(e){}
+  members[profile]={done:{...done}, ratings:{...ratings}};
+  pushMine();
+}
+
+// ======== Firebase-Sync ========
+function setSync(on,txt){
+  const el=document.getElementById("synced"); if(!el)return;
+  el.classList.toggle("off",!on);
+  document.getElementById("syncedtxt").textContent=txt;
+}
+function initFirebase(){
+  try{ if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); }
+  catch(e){ setSync(false,"offline"); return; }
+  const db=firebase.database();
+  membersRef=db.ref("groups/"+dbPath+"/members");
+  membersRef.on("value", async snap=>{
+    const val=snap.val()||{};
+    const next={};
+    for(const name in val){
+      if(name===profile) continue;
+      const dec=await decryptObj(cryptoKey, val[name]);
+      if(dec) next[name]={done:dec.done||{}, ratings:dec.ratings||{}};
+    }
+    next[profile]={done:{...done}, ratings:{...ratings}};
+    members=next;
+    setSync(true, MEMBERS.filter(n=>members[n]).length+" Profile · synchron");
+    render();
+  }, err=>{ setSync(false,"offline"); });
+  pushMine();
+}
+let pushT=null;
+function pushMine(){
+  if(!membersRef||!cryptoKey) return;
+  clearTimeout(pushT);
+  pushT=setTimeout(async()=>{
+    try{ const blob=await encryptObj(cryptoKey,{done,ratings,updated:Date.now()}); membersRef.child(profile).set(blob); }
+    catch(e){}
+  },400);
+}
+
+// ======== Aggregation über alle Profile ========
+function whoDone(id){ return MEMBERS.filter(n=>members[n]&&members[n].done&&members[n].done[id]); }
+function allRatings(id){ return MEMBERS.filter(n=>members[n]&&members[n].ratings&&members[n].ratings[id]).map(n=>({n, v:members[n].ratings[id]})); }
+function avgRating(id){ const a=allRatings(id); return a.length ? a.reduce((s,x)=>s+x.v,0)/a.length : 0; }
+function avatar(name){ return `<span class="av" style="background:${COLORS[name]||'#888'}" title="${name}">${INIT[name]||name[0]}</span>`; }
+
+// ======== Tabs ========
 function renderTabs(){
   const t=document.getElementById("tabs");
   let html=`<button class="tab ${activeCat==="alle"?"active":""}" data-c="alle">Alle <small>${countDone("alle")}/${countAll("alle")}</small></button>`;
@@ -498,13 +628,23 @@ function renderTabs(){
 const countAll=c=>DATA.filter(d=>c==="alle"||d.cat===c).length;
 const countDone=c=>DATA.filter(d=>(c==="alle"||d.cat===c)&&done[d.id]).length;
 
-// ---- Liste ----
+// ======== Liste ========
+let activeCat="alle", filter="alle", query="", view="liste";
 function matches(d){
   if(activeCat!=="alle"&&d.cat!==activeCat)return false;
   if(filter==="offen"&&done[d.id])return false;
   if(filter==="done"&&!done[d.id])return false;
   if(query&&!(d.name+" "+d.desc+" "+d.addr).toLowerCase().includes(query))return false;
   return true;
+}
+function metaHtml(id){
+  const who=whoDone(id), avg=avgRating(id);
+  if(!who.length && !avg) return "";
+  let h=`<div class="meta">`;
+  if(who.length) h+=`<span class="who">${who.map(avatar).join("")}</span>`;
+  if(avg) h+=`<span class="avg"><b>Ø ${avg.toFixed(1).replace(".",",")}</b> ${"🍷".repeat(Math.round(avg))}</span>`;
+  h+=`</div>`;
+  return h;
 }
 function renderMain(){
   const m=document.getElementById("main");
@@ -517,7 +657,7 @@ function renderMain(){
     for(const d of items){
       html+=`<div class="item ${done[d.id]?"done":""}" data-id="${d.id}">
         <div class="check" data-act="toggle">${done[d.id]?"✓":""}</div>
-        <div class="item-body"><b>${d.name}</b><span>${d.desc}</span>${ratings[d.id]?`<span class="rrow">${"🍷".repeat(ratings[d.id])}</span>`:""}</div>
+        <div class="item-body"><b>${d.name}</b><span class="d">${d.desc}</span>${metaHtml(d.id)}</div>
         <div class="chev">›</div></div>`;
     }
     html+=`</div>`;
@@ -543,10 +683,10 @@ function toggle(id){
   if(done[id])delete done[id]; else done[id]=1;
   save(); render();
   const sheet=document.getElementById("sheet");
-  if(sheet.classList.contains("open")&&sheet.dataset.id===id)updateSheetBtn(id);
+  if(sheet.classList.contains("open")&&sheet.dataset.id===id){ updateSheetBtn(id); renderPeople(id); }
 }
 
-// ---- Detail-Sheet ----
+// ======== Detail-Sheet ========
 function openSheet(id){
   const d=DATA.find(x=>x.id===id); if(!d)return;
   const q=encodeURIComponent(d.name+", "+(d.addr.includes("Mainz")||/\d{5}/.test(d.addr)?d.addr:d.addr+", Mainz"));
@@ -561,6 +701,7 @@ function openSheet(id){
     <iframe class="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
       src="https://maps.google.com/maps?q=${q}&z=15&output=embed"></iframe>
     <div class="rating" id="rating"></div>
+    <div class="peoplebox" id="peoplebox"></div>
     <div class="btn-row">
       <button class="btn check-btn" id="sheetcheck"></button>
       <a class="btn maps" target="_blank" rel="noopener"
@@ -568,6 +709,7 @@ function openSheet(id){
     </div>`;
   updateSheetBtn(id);
   renderRating(id);
+  renderPeople(id);
   document.getElementById("sheetcheck").onclick=()=>toggle(id);
   document.getElementById("backdrop").classList.add("open");
   sheet.classList.add("open");
@@ -575,14 +717,27 @@ function openSheet(id){
 function renderRating(id){
   const el=document.getElementById("rating"); if(!el)return;
   const v=ratings[id]||0;
-  let h=`<span class="rlabel">Bewertung:</span>`;
+  let h=`<span class="rlabel">Deine Bewertung:</span>`;
   for(let i=1;i<=5;i++)h+=`<button class="glass ${i<=v?"on":""}" data-v="${i}">🍷</button>`;
   el.innerHTML=h;
   el.querySelectorAll(".glass").forEach(b=>b.onclick=()=>{
     const nv=+b.dataset.v;
     if(ratings[id]===nv)delete ratings[id]; else ratings[id]=nv;
-    save(); renderRating(id); renderMain();
+    save(); renderRating(id); renderPeople(id); renderMain();
   });
+}
+function renderPeople(id){
+  const el=document.getElementById("peoplebox"); if(!el)return;
+  const who=whoDone(id), ar=allRatings(id), avg=avgRating(id);
+  let h=`<h3>Wer war da</h3>`;
+  h+= who.length ? `<div class="who" style="margin-bottom:4px">${who.map(avatar).join("")}<span style="margin-left:12px;font-size:13.5px;color:var(--muted)">${who.join(", ")}</span></div>`
+                 : `<div class="pnone">Noch niemand abgehakt.</div>`;
+  if(ar.length){
+    h+=`<h3 style="margin-top:14px">Bewertungen</h3>`;
+    ar.forEach(r=>{ h+=`<div class="prow">${avatar(r.n)}<span class="nm">${r.n}</span><span class="gl">${"🍷".repeat(r.v)}</span></div>`; });
+    h+=`<div class="pavg">Gruppen-Schnitt: <b>${avg.toFixed(1).replace(".",",")}</b> von 5 🍷</div>`;
+  }
+  el.innerHTML=h;
 }
 function updateSheetBtn(id){
   const b=document.getElementById("sheetcheck"); if(!b)return;
@@ -595,7 +750,7 @@ function closeSheet(){
 }
 document.getElementById("backdrop").onclick=closeSheet;
 
-// ---- Kartenansicht ----
+// ======== Kartenansicht ========
 let map=null, markerLayer=null, lastFitKey="";
 function initMap(){
   if(map||typeof L==="undefined")return;
@@ -609,8 +764,10 @@ function renderMap(){
   markerLayer.clearLayers();
   const pts=[];
   DATA.filter(matches).forEach(d=>{
+    const who=whoDone(d.id);
     const m=L.circleMarker(d.geo,{radius:8,color:"#fff",weight:2,fillColor:done[d.id]?"#2e9e5b":"#b3203c",fillOpacity:.95});
-    m.bindPopup(`<b>${done[d.id]?"✓ ":""}${d.name}</b>${ratings[d.id]?"🍷".repeat(ratings[d.id])+"<br>":""}<a href="#" onclick="openSheet('${d.id}');return false;">Details ›</a>`);
+    const av=who.length?who.map(avatar).join("")+"<br>":"";
+    m.bindPopup(`<b>${done[d.id]?"✓ ":""}${d.name}</b>${av}<a href="#" onclick="openSheet('${d.id}');return false;">Details ›</a>`);
     m.addTo(markerLayer); pts.push(d.geo);
   });
   const fitKey=activeCat+"|"+filter+"|"+query;
@@ -625,7 +782,7 @@ document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{
   };
 });
 
-// ---- Suche & Filter ----
+// ======== Suche & Filter ========
 document.getElementById("search").oninput=e=>{query=e.target.value.trim().toLowerCase();renderMain();};
 document.getElementById("seg").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{
@@ -635,23 +792,54 @@ document.getElementById("seg").querySelectorAll("button").forEach(b=>{
   };
 });
 
-// ---- Backup ----
-document.getElementById("backup").onclick=()=>{
-  const code=btoa(unescape(encodeURIComponent(JSON.stringify({d:Object.keys(done),r:ratings}))));
-  const inp=prompt("Dein Sicherungs-Code (kopieren & aufbewahren).\nZum Wiederherstellen: alten Code hier einfügen und OK drücken.",code);
-  if(inp&&inp!==code){
-    try{
-      const obj=JSON.parse(decodeURIComponent(escape(atob(inp.trim()))));
-      const ids=Array.isArray(obj)?obj:(obj.d||[]);
-      done={}; ids.forEach(i=>done[i]=1);
-      ratings=(!Array.isArray(obj)&&obj.r)||{};
-      save(); render();
-      alert("Fortschritt wiederhergestellt ✓");
-    }catch(e){ alert("Code ungültig."); }
-  }
-};
+// ======== Footer / Profil ========
+function updateFooter(){
+  const el=document.getElementById("merow"); if(!el)return;
+  el.innerHTML=`Angemeldet als <b>${profile}</b> · <button id="switch">Profil wechseln</button>`;
+  document.getElementById("switch").onclick=switchProfile;
+}
+function switchProfile(){
+  if(membersRef){ membersRef.off(); membersRef=null; }
+  localStorage.removeItem("ag-profile");
+  profile=""; done={}; ratings={}; members={};
+  showProfilePicker();
+}
 
-render();
+// ======== Overlays ========
+function showProfilePicker(){
+  const ov=document.getElementById("overlay");
+  ov.innerHTML=`<div class="logo">🍷</div><h2>Wer bist du?</h2>
+    <p>Tippe auf deinen Namen. Deine Häkchen und Bewertungen werden verschlüsselt mit der Gruppe geteilt.</p>
+    <div class="pgrid">${MEMBERS.map(n=>`<button class="pbtn" data-n="${n}"><span class="bigav" style="background:${COLORS[n]}">${INIT[n]}</span>${n}</button>`).join("")}</div>`;
+  ov.classList.add("show");
+  ov.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{
+    profile=b.dataset.n; localStorage.setItem("ag-profile",profile); boot();
+  });
+}
+function showJoinNeeded(){
+  const ov=document.getElementById("overlay");
+  ov.innerHTML=`<div class="logo">🔒</div><h2>Einladungslink nötig</h2>
+    <p>Diese App gehört zur Agraffen-Gruppe. Öffne den Einladungslink, den du per WhatsApp bekommen hast – damit schaltet sich die App frei.</p>`;
+  ov.classList.add("show");
+}
+
+// ======== Boot ========
+async function boot(){
+  const ov=document.getElementById("overlay");
+  if(!groupCode){ showJoinNeeded(); return; }
+  if(!profile){ showProfilePicker(); return; }
+  loadLocal();
+  ov.classList.remove("show");
+  updateFooter();
+  render();
+  setSync(false,"verbinde…");
+  try{
+    cryptoKey=await deriveKey(groupCode);
+    dbPath=await derivePath(groupCode);
+    initFirebase();
+  }catch(e){ setSync(false,"offline"); }
+}
+boot();
 </script>
 </body>
 </html>
