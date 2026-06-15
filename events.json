@@ -1,0 +1,15 @@
+{
+  "updated": "2026-06-15",
+  "source": "meinestadt.de",
+  "events": [
+    {"name": "Basement", "start": "2026-06-15T20:00:00", "venue": "Schlachthof Wiesbaden", "city": "Wiesbaden", "cat": "Konzert"},
+    {"name": "Momo", "start": "2026-06-16T09:30:00", "venue": "Burg Sonnenberg", "city": "Wiesbaden", "cat": "Theater"},
+    {"name": "SommerFESTspiele 2026", "start": "2026-06-16T09:30:00", "venue": "Burg Sonnenberg", "city": "Wiesbaden", "cat": "Festival"},
+    {"name": "Der Wald hat 'nen Vogel! – WishmobTheater", "start": "2026-06-16T10:30:00", "venue": "Haus der Jugend Mainz", "city": "Mainz", "cat": "Theater"},
+    {"name": "ANKOR", "start": "2026-06-16T19:30:00", "venue": "Schlachthof Wiesbaden", "city": "Wiesbaden", "cat": "Konzert"},
+    {"name": "Ankor – Summer Shows 2026", "start": "2026-06-16T20:00:00", "venue": "Schlachthof Wiesbaden", "city": "Wiesbaden", "cat": "Konzert"},
+    {"name": "Audio88 & Yassin – Zeit zu sterben Tour", "start": "2026-06-16T20:00:00", "venue": "Schlachthof Wiesbaden", "city": "Wiesbaden", "cat": "Konzert"},
+    {"name": "CGI Public Talk", "start": "2026-06-17T18:00:00", "venue": "Gutenberg Digital Hub", "city": "Mainz", "cat": "Talk"},
+    {"name": "MADE.Festival: Ichthyosaurus Brecht", "start": "2026-06-17T20:00:00", "venue": "Literaturhaus Villa Clementine", "city": "Wiesbaden", "cat": "Literatur"}
+  ]
+}

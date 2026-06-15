@@ -108,6 +108,21 @@ main{padding:12px 14px 24px}
 .ph h2{font-size:19px;color:var(--text);font-weight:700;margin:14px 0 6px}
 .ph p{font-size:14px;line-height:1.5;max-width:300px;margin:0 auto}
 .ph .badge-soon{margin-top:14px;font-size:11px;padding:3px 10px}
+/* Events */
+.ev-head{padding:16px 16px 4px}
+.ev-head h2{font-size:20px;font-weight:700}
+.ev-head p{font-size:13px;color:var(--muted);margin-top:2px}
+#eventswrap{padding:8px 14px 24px}
+.ev-day{font-size:13px;font-weight:700;color:var(--bordeaux);margin:16px 2px 8px}
+.ev-card{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;text-decoration:none;color:var(--text)}
+.ev-time{font-size:13px;font-weight:700;color:var(--bordeaux);min-width:44px;font-variant-numeric:tabular-nums}
+.ev-body{flex:1;min-width:0}
+.ev-body b{display:block;font-size:14.5px;font-weight:600;line-height:1.25}
+.ev-body span{display:block;font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-cat{font-size:10.5px;color:#7A5A12;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.ev-src{text-align:center;font-size:11px;color:#C3B6A0;padding:16px 0 4px}
+.evhome{border-left:3px solid var(--bordeaux)}
+.ev-meta{font-size:12.5px;color:var(--muted);margin-top:5px}
 /* Detail-Sheet */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
@@ -193,12 +208,8 @@ main{padding:12px 14px 24px}
 </section>
 
 <section id="s-events" class="screen">
-  <div class="ph">
-    <svg class="ic" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
-    <h2>Events in Mainz</h2>
-    <p>Bald siehst du hier, was die nächsten Wochen in Mainz läuft – automatisch aktualisiert, und jedes Event lässt sich mit einem Tipp zum Trip machen.</p>
-    <div class="badge-soon">kommt bald</div>
-  </div>
+  <div class="ev-head"><h2>Events</h2><p>Mainz, Wiesbaden &amp; Rheinhessen</p></div>
+  <div id="eventswrap"></div>
 </section>
 
 <section id="s-trips" class="screen">
@@ -247,7 +258,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.2";
+const APP_VERSION="2.3";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -677,6 +688,7 @@ function setScreen(s){
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active", b.dataset.s===s));
   if(s==="home") renderHome();
   if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
+  if(s==="events") renderEvents();
   window.scrollTo(0,0);
 }
 document.getElementById("bottomnav").querySelectorAll(".navbtn").forEach(b=>{
@@ -691,6 +703,53 @@ function setView(v){
 }
 document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
+// ======== Events ========
+let EVENTS=[], eventsUpdated="";
+async function loadEvents(){
+  try{
+    const r=await fetch("events.json?x="+Date.now(),{cache:"no-store"});
+    if(!r.ok) return;
+    const j=await r.json();
+    EVENTS=(j.events||[]).filter(e=>e&&e.name&&e.start).sort((a,b)=>a.start.localeCompare(b.start));
+    eventsUpdated=j.updated||"";
+    if(screen==="events") renderEvents();
+    if(screen==="home") renderHome();
+  }catch(e){}
+}
+function upcomingEvents(){ const t=new Date(); t.setHours(0,0,0,0); return EVENTS.filter(e=>new Date(e.start)>=t); }
+function fmtD(iso){ try{return new Date(iso).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});}catch(e){return iso;} }
+function fmtT(iso){ try{return new Date(iso).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";} }
+function evSearch(e){ return "https://www.google.com/search?q="+encodeURIComponent(e.name+" "+(e.venue||"")+" "+(e.city||"")); }
+function renderEvents(){
+  const wrap=document.getElementById("eventswrap"); if(!wrap)return;
+  const up=upcomingEvents();
+  if(!up.length){ wrap.innerHTML=`<div class="empty">Noch keine Events geladen.<br>Der wöchentliche Import füllt das automatisch.</div>`; return; }
+  let h="", lastDay="";
+  up.forEach(e=>{
+    const day=fmtD(e.start);
+    if(day!==lastDay){ h+=`<div class="ev-day">${day}</div>`; lastDay=day; }
+    h+=`<a class="ev-card" target="_blank" rel="noopener" href="${evSearch(e)}">
+      <div class="ev-time">${fmtT(e.start)}</div>
+      <div class="ev-body"><b>${e.name}</b><span>${[e.venue,e.city].filter(Boolean).join(" · ")}</span></div>
+      ${e.cat?`<span class="ev-cat">${e.cat}</span>`:""}
+      <div class="chev">›</div></a>`;
+  });
+  wrap.innerHTML=h+`<div class="ev-src">Quelle: meinestadt.de${eventsUpdated?" · Stand "+eventsUpdated:""}</div>`;
+}
+function eventOfWeek(){
+  const up=upcomingEvents(); if(!up.length) return null;
+  const liked=new Set();
+  for(const id in ratings){ if(ratings[id]>=4){ const d=DATA.find(x=>x.id===id); if(d){ const m=d.addr.match(/Mainz|Wiesbaden|Ingelheim|Nierstein|Oppenheim|Bodenheim|Nackenheim|Budenheim/i); if(m) liked.add(m[0]); } } }
+  return up.find(e=>e.city&&[...liked].some(c=>e.city.indexOf(c)>=0)) || up[0];
+}
+function eventOfWeekCard(){
+  const e=eventOfWeek();
+  if(!e) return `<div class="hcard soon"><h3>🍷 Event der Woche <span class="badge-soon">bald</span></h3><div class="ttl">Noch keine Events geladen</div><p>Sobald der Import läuft, steht hier dein Wochen-Highlight.</p></div>`;
+  return `<div class="hcard evhome"><h3>🍷 Event der Woche</h3>
+    <div class="ttl">${e.name}</div>
+    <div class="ev-meta">${fmtD(e.start)}, ${fmtT(e.start)} · ${[e.venue,e.city].filter(Boolean).join(" · ")}</div>
+    <button class="kbtn" id="eowbtn" style="margin-top:11px">Alle Events ansehen</button></div>`;
+}
 // ======== Home ========
 function renderHome(){
   const el=document.getElementById("s-home"); if(!el)return;
@@ -702,9 +761,7 @@ function renderHome(){
   h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
 
   // 1) Event der Woche
-  h+=`<div class="hcard soon"><h3>🍷 Event der Woche <span class="badge-soon">bald</span></h3>
-      <div class="ttl">Dein persönliches Wochen-Highlight</div>
-      <p>Bald schlägt dir die App jede Woche ein Event in Mainz vor – passend zu deinen Bewertungen.</p></div>`;
+  h+=eventOfWeekCard();
 
   // 2) Korken knallen lassen (funktional)
   h+=`<button class="cta" id="korken"><svg viewBox="0 0 24 24"><path d="M14 4l6 6M9 9l6 6M4 20l5-1 8-8-4-4-8 8-1 5z"/></svg> Korken knallen lassen</button>
@@ -741,6 +798,7 @@ function renderHome(){
   h+=`<div class="ver">Agraffen-App · v${APP_VERSION}</div>`;
   el.innerHTML=h;
   const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
+  const eb=document.getElementById("eowbtn"); if(eb) eb.onclick=()=>setScreen("events");
 }
 function korkenRoulette(){
   const open=DATA.filter(d=>!done[d.id]);
@@ -945,6 +1003,7 @@ async function boot(){
   ov.classList.remove("show");
   setScreen("home");
   updateAppbar();
+  loadEvents();
   setSync(false,"verbinde…");
   try{
     cryptoKey=await deriveKey(groupCode);
