@@ -524,8 +524,15 @@ const DATA = RAW.map(r=>({id:slug(r[0])+"-"+r[1].slice(0,3), name:r[0], cat:r[1]
 
 // ======== Identität: Gruppen-Code + Profil ========
 (function(){
-  const h=(location.hash||"").match(/join=([^&]+)/);
-  if(h){ localStorage.setItem("ag-code", decodeURIComponent(h[1])); history.replaceState(null,"",location.pathname+location.search); }
+  // Code aus dem Einladungslink lesen und merken.
+  // Wichtig: Der #join-Code bleibt bewusst in der URL stehen, damit ein zum
+  // Home-Bildschirm hinzugefügtes Icon (eigener Speicher, getrennt von Safari)
+  // den Code mitspeichert und die App auch dort freischaltet.
+  // Der Hash wird nie an einen Server übertragen.
+  try{
+    const h=(location.hash||"").match(/join=([^&]+)/);
+    if(h){ localStorage.setItem("ag-code", decodeURIComponent(h[1])); }
+  }catch(e){}
 })();
 let groupCode = localStorage.getItem("ag-code") || "";
 let profile   = localStorage.getItem("ag-profile") || "";
