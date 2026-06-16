@@ -123,6 +123,34 @@ main{padding:12px 14px 24px}
 .ev-src{text-align:center;font-size:11px;color:#C3B6A0;padding:16px 0 4px}
 .evhome{border-left:3px solid var(--bordeaux)}
 .ev-meta{font-size:12.5px;color:var(--muted);margin-top:5px}
+/* Trips */
+#tripswrap{padding:8px 14px 24px}
+.trip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:12px}
+.trip.fixed{border-left:3px solid var(--green)}
+.trip .th{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.trip .tt{font-size:16px;font-weight:700;line-height:1.2}
+.trip .tp{font-size:12.5px;color:var(--muted);margin-top:2px}
+.trip-status{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.st-vote{background:var(--gold-soft);color:#7A5A12}
+.st-fix{background:#E7F4EC;color:#2C6B45}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.opt:last-child{border-bottom:0}
+.opt.win{background:#F1FAF4;border-radius:10px;padding:9px 8px}
+.opt-date{flex:1;font-size:13.5px}
+.fixlink{font-size:11.5px;color:var(--bordeaux);cursor:pointer;text-decoration:underline;margin-left:8px}
+.opt-cnt{font-size:11.5px;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:4px}
+.opt-btn{border:1.5px solid var(--line);background:#fff;border-radius:10px;width:34px;height:34px;font-size:15px;cursor:pointer;color:var(--muted);flex:0 0 auto}
+.opt-btn.on{background:var(--green);border-color:var(--green);color:#fff}
+.trip-actions{display:flex;gap:8px;margin-top:12px}
+.trip-actions .kbtn{margin-top:0}
+.who-mini{display:inline-flex;align-items:center}
+.who-mini .av{width:18px;height:18px;font-size:8.5px;margin-right:-5px;border:1.5px solid var(--card)}
+.tform{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 14px 0}
+.tform label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px;font-weight:600}
+.tform label:first-child{margin-top:0}
+.tform input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:15px;background:#fff;color:var(--text);outline:none}
+.dtrow{margin-bottom:7px}
+.linkbtn{border:0;background:none;color:var(--bordeaux);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px 0}
 /* Detail-Sheet */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
@@ -213,12 +241,10 @@ main{padding:12px 14px 24px}
 </section>
 
 <section id="s-trips" class="screen">
-  <div class="ph">
-    <svg class="ic" viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14"/></svg>
-    <h2>Trips</h2>
-    <p>Bald könnt ihr hier gemeinsame Ausflüge vorschlagen, Termine abstimmen und den fixen Treffpunkt als Kalender-Eintrag aufs Handy laden.</p>
-    <div class="badge-soon">kommt bald</div>
-  </div>
+  <div class="ev-head"><h2>Trips</h2><p>Ausflüge vorschlagen &amp; Termine abstimmen</p></div>
+  <div style="padding:2px 14px 0"><button class="cta" id="newtripbtn" style="margin:6px 0 0;width:100%"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Neuer Trip</button></div>
+  <div id="newtripform" style="display:none"></div>
+  <div id="tripswrap"></div>
 </section>
 
 <section id="s-chat" class="screen">
@@ -258,7 +284,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.3";
+const APP_VERSION="2.4";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -659,6 +685,7 @@ function initFirebase(){
     render();
     if(pushNeeded) pushMine();
   }, err=>{ setSync(false,"offline"); });
+  subscribeTrips(db);
 }
 let pushT=null;
 function pushMine(){
@@ -689,6 +716,7 @@ function setScreen(s){
   if(s==="home") renderHome();
   if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
   if(s==="events") renderEvents();
+  if(s==="trips") renderTrips();
   window.scrollTo(0,0);
 }
 document.getElementById("bottomnav").querySelectorAll(".navbtn").forEach(b=>{
@@ -703,6 +731,108 @@ function setView(v){
 }
 document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
+// ======== Trips ========
+let trips={}, tripVotes={}, tripsRef=null, votesRef=null;
+function subscribeTrips(db){
+  tripsRef=db.ref("groups/"+dbPath+"/trips");
+  tripsRef.on("value", async snap=>{ const v=snap.val()||{}; const nx={}; for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d) nx[id]=d; } trips=nx; if(screen==="trips")renderTrips(); if(screen==="home")renderHome(); });
+  votesRef=db.ref("groups/"+dbPath+"/tripVotes");
+  votesRef.on("value", async snap=>{ const v=snap.val()||{}; const nx={}; for(const id in v){ nx[id]={}; for(const nm in v[id]){ const d=await decryptObj(cryptoKey,v[id][nm]); if(d) nx[id][nm]=d.avail||{}; } } tripVotes=nx; if(screen==="trips")renderTrips(); if(screen==="home")renderHome(); });
+}
+function tFmt(iso){ try{const d=new Date(iso); return d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})+", "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr";}catch(e){return iso;} }
+function optAvail(tid,oid){ const v=tripVotes[tid]||{}; return MEMBERS.filter(n=>v[n]&&v[n][oid]); }
+function fixedISO(t){ if(!t.fixed)return null; const o=(t.options||[]).find(x=>x.id===t.fixed); return o?o.iso:null; }
+async function createTrip(title,place,isos){
+  if(!tripsRef||!cryptoKey)return;
+  const id="t"+Date.now()+Math.random().toString(36).slice(2,5);
+  const trip={title,place:place||"",creator:profile,options:isos.map((iso,i)=>({id:"o"+i,iso})),created:Date.now(),fixed:null};
+  try{ tripsRef.child(id).set(await encryptObj(cryptoKey,trip)); }catch(e){}
+}
+async function toggleVote(tid,oid){
+  if(!votesRef||!cryptoKey)return;
+  const cur=Object.assign({},(tripVotes[tid]&&tripVotes[tid][profile])||{});
+  cur[oid]=!cur[oid];
+  try{ votesRef.child(tid).child(profile).set(await encryptObj(cryptoKey,{avail:cur})); }catch(e){}
+}
+async function fixTrip(tid,oid){
+  const t=trips[tid]; if(!t||t.creator!==profile)return;
+  t.fixed=(t.fixed===oid)?null:oid;
+  try{ tripsRef.child(tid).set(await encryptObj(cryptoKey,t)); }catch(e){}
+}
+function nextTrip(){
+  const cut=Date.now()-864e5;
+  const arr=Object.keys(trips).map(id=>({id,t:trips[id],iso:fixedISO(trips[id])})).filter(x=>x.iso&&new Date(x.iso).getTime()>=cut).sort((a,b)=>a.iso.localeCompare(b.iso));
+  return arr[0]||null;
+}
+function pad2(n){return String(n).padStart(2,"0");}
+function icsStamp(d){return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate())+"T"+pad2(d.getUTCHours())+pad2(d.getUTCMinutes())+"00Z";}
+function tripICS(t){
+  const iso=fixedISO(t); if(!iso)return;
+  const s=new Date(iso), e=new Date(s.getTime()+2*3600*1000);
+  const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Agraffen//Trips//DE","BEGIN:VEVENT","UID:"+Date.now()+"@agraffen","DTSTAMP:"+icsStamp(new Date()),"DTSTART:"+icsStamp(s),"DTEND:"+icsStamp(e),"SUMMARY:"+(t.title||"Agraffen-Trip")];
+  if(t.place)lines.push("LOCATION:"+t.place);
+  lines.push("END:VEVENT","END:VCALENDAR");
+  const uri="data:text/calendar;charset=utf-8,"+encodeURIComponent(lines.join("\r\n"));
+  const a=document.createElement("a"); a.href=uri; a.download=(t.title||"trip").replace(/[^a-z0-9]+/gi,"-")+".ics"; document.body.appendChild(a); a.click(); a.remove();
+}
+function openTripForm(){
+  const f=document.getElementById("newtripform");
+  f.innerHTML=`<div class="tform">
+    <label>Was wollt ihr machen?</label>
+    <input id="t-title" placeholder="z. B. Weinprobe, Tennis, Ausflug" list="placelist" autocomplete="off">
+    <datalist id="placelist">${DATA.map(d=>`<option value="${d.name}"></option>`).join("")}</datalist>
+    <label>Termin-Vorschläge — wann käme infrage?</label>
+    <div id="dtwrap"><div class="dtrow"><input type="datetime-local" class="dtopt"></div><div class="dtrow"><input type="datetime-local" class="dtopt"></div></div>
+    <button class="linkbtn" id="adddt">+ weiterer Termin</button>
+    <div class="trip-actions" style="margin-top:8px">
+      <button class="kbtn" id="t-cancel" style="border-color:var(--line);color:var(--muted)">Abbrechen</button>
+      <button class="kbtn" id="t-create" style="background:var(--gold);color:#fff;border-color:var(--gold)">Trip anlegen</button>
+    </div></div>`;
+  f.style.display="block";
+  document.getElementById("newtripbtn").style.display="none";
+  document.getElementById("adddt").onclick=()=>{ const w=document.getElementById("dtwrap"); const r=document.createElement("div"); r.className="dtrow"; r.innerHTML=`<input type="datetime-local" class="dtopt">`; w.appendChild(r); };
+  document.getElementById("t-cancel").onclick=closeTripForm;
+  document.getElementById("t-create").onclick=()=>{
+    const title=document.getElementById("t-title").value.trim();
+    const isos=[...document.querySelectorAll(".dtopt")].map(i=>i.value).filter(Boolean);
+    if(!title){ alert("Bitte einen Titel eingeben."); return; }
+    if(!isos.length){ alert("Bitte mindestens einen Termin vorschlagen."); return; }
+    createTrip(title,"",isos); closeTripForm();
+  };
+}
+function closeTripForm(){ const f=document.getElementById("newtripform"); if(f){f.style.display="none";f.innerHTML="";} const b=document.getElementById("newtripbtn"); if(b)b.style.display=""; }
+function renderTrips(){
+  const wrap=document.getElementById("tripswrap"); if(!wrap)return;
+  const ids=Object.keys(trips).sort((a,b)=>(trips[b].created||0)-(trips[a].created||0));
+  if(!ids.length){ wrap.innerHTML=`<div class="empty">Noch keine Trips.<br>Tippe auf „Neuer Trip", um den ersten Ausflug vorzuschlagen.</div>`; return; }
+  let h="";
+  ids.forEach(id=>{
+    const t=trips[id], isFixed=!!t.fixed;
+    h+=`<div class="trip ${isFixed?'fixed':''}"><div class="th"><div><div class="tt">${t.title||"Trip"}</div>${t.place?`<div class="tp">📍 ${t.place}</div>`:""}</div><span class="trip-status ${isFixed?'st-fix':'st-vote'}">${isFixed?'Termin steht':'Abstimmung'}</span></div>`;
+    (t.options||[]).forEach(o=>{
+      const av=optAvail(id,o.id);
+      const mine=!!(tripVotes[id]&&tripVotes[id][profile]&&tripVotes[id][profile][o.id]);
+      const win=t.fixed===o.id;
+      h+=`<div class="opt ${win?'win':''}"><div class="opt-date">${tFmt(o.iso)}${win?' ✓':''}${t.creator===profile?`<span class="fixlink" data-fix="${id}|${o.id}">${win?'lösen':'fixieren'}</span>`:''}</div><div class="opt-cnt">${av.length} können <span class="who-mini">${av.map(avatar).join("")}</span></div><button class="opt-btn ${mine?'on':''}" data-vote="${id}|${o.id}">${mine?'✓':''}</button></div>`;
+    });
+    if(isFixed){ h+=`<div class="trip-actions"><button class="kbtn" data-ics="${id}"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#7A5A12;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 9.5h17M8 3v4M16 3v4"></path></svg> In den Kalender</button></div>`; }
+    h+=`</div>`;
+  });
+  wrap.innerHTML=h;
+  wrap.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>{ const p=b.dataset.vote.split("|"); toggleVote(p[0],p[1]); });
+  wrap.querySelectorAll("[data-fix]").forEach(b=>b.onclick=()=>{ const p=b.dataset.fix.split("|"); fixTrip(p[0],p[1]); });
+  wrap.querySelectorAll("[data-ics]").forEach(b=>b.onclick=()=>{ tripICS(trips[b.dataset.ics]); });
+}
+function nextTripCard(){
+  const nt=nextTrip();
+  if(!nt){
+    const any=Object.keys(trips).length;
+    return `<div class="hcard soon"><h3>🧭 Nächster Trip <span class="badge-soon">${any?'Abstimmung läuft':'bald'}</span></h3><div class="ttl">${any?'Noch kein Termin fixiert':'Noch kein Trip geplant'}</div><p>${any?'In den Trips läuft eine Abstimmung – stimm mit ab!':'Schlag im Trips-Tab den ersten Ausflug vor.'}</p><button class="kbtn" id="trbtn" style="margin-top:11px">Zu den Trips</button></div>`;
+  }
+  const av=optAvail(nt.id,nt.t.fixed);
+  return `<div class="hcard evhome"><h3>🧭 Nächster Trip</h3><div class="ttl">${nt.t.title}</div><div class="ev-meta">${tFmt(nt.iso)}${nt.t.place?' · '+nt.t.place:''}</div>${av.length?`<div class="who" style="margin-top:8px">${av.map(avatar).join("")}<span style="margin-left:12px;font-size:12.5px;color:var(--muted)">dabei</span></div>`:''}<button class="kbtn" id="trbtn" style="margin-top:11px">Zu den Trips</button></div>`;
+}
+(function(){ const b=document.getElementById("newtripbtn"); if(b) b.onclick=openTripForm; })();
 // ======== Events ========
 let EVENTS=[], eventsUpdated="";
 async function loadEvents(){
@@ -768,9 +898,7 @@ function renderHome(){
       <div class="cta-sub">Würfelt einen offenen Ort für heute</div>`;
 
   // 3) Nächster Trip
-  h+=`<div class="hcard soon"><h3>🧭 Nächster Trip <span class="badge-soon">bald</span></h3>
-      <div class="ttl">Noch kein Trip geplant</div>
-      <p>Bald könnt ihr hier Ausflüge vorschlagen, abstimmen und den Termin in den Kalender laden.</p></div>`;
+  h+=nextTripCard();
 
   // 4) Ranking (funktional)
   h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
@@ -799,6 +927,7 @@ function renderHome(){
   el.innerHTML=h;
   const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
   const eb=document.getElementById("eowbtn"); if(eb) eb.onclick=()=>setScreen("events");
+  const tb=document.getElementById("trbtn"); if(tb) tb.onclick=()=>setScreen("trips");
 }
 function korkenRoulette(){
   const open=DATA.filter(d=>!done[d.id]);
