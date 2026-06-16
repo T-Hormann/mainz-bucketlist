@@ -179,6 +179,7 @@ main{padding:12px 14px 24px}
 .tform .tagonly,.tform .mehronly{font-weight:400}
 .tform.tagmode .mehronly{display:none}
 .tform:not(.tagmode) .tagonly{display:none}
+.task-as-sel{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--bordeaux);background:#fff;max-width:120px}
 /* Detail-Sheet */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
@@ -312,7 +313,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.6";
+const APP_VERSION="2.7";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -796,6 +797,8 @@ async function addStay(tid,label,url){ const t=trips[tid]; if(!t)return; t.stays
 async function addTransport(tid,label){ const t=trips[tid]; if(!t)return; t.transport.push({id:"x"+Date.now().toString(36),label}); await writeTrip(tid); }
 async function addTask(tid,text){ const t=trips[tid]; if(!t)return; t.tasks.push({id:"k"+Date.now().toString(36),text,assignee:null,done:false,by:profile}); await writeTrip(tid); }
 async function claimTask(tid,kid){ const t=trips[tid]; if(!t)return; const k=t.tasks.find(x=>x.id===kid); if(!k)return; k.assignee=(k.assignee===profile)?null:profile; await writeTrip(tid); }
+async function assignTask(tid,kid,name){ const t=trips[tid]; if(!t)return; const k=(t.tasks||[]).find(x=>x.id===kid); if(!k)return; k.assignee=name||null; await writeTrip(tid); }
+async function renameTrip(tid,title){ const t=trips[tid]; if(!t||!isCreator(t))return; t.title=title; await writeTrip(tid); }
 async function toggleTaskDone(tid,kid){ const t=trips[tid]; if(!t)return; const k=t.tasks.find(x=>x.id===kid); if(!k)return; k.done=!k.done; await writeTrip(tid); }
 async function addItin(tid,day,text){ const t=trips[tid]; if(!t)return; t.itinerary.push({id:"i"+Date.now().toString(36),day:day||"",text}); await writeTrip(tid); }
 async function fixField(tid,field,oid){ const t=trips[tid]; if(!t||!isCreator(t))return; t[field]=(t[field]===oid)?null:oid; await writeTrip(tid); }
@@ -875,7 +878,7 @@ function renderTrips(){
 }
 function renderTripDetail(t,id,wrap,head){
   const creator=isCreator(t); const ps=tParts(t); const multi=isMulti(t);
-  if(head)head.innerHTML=`<button class="backbtn" id="tripback">‹ Trips</button><h2 style="margin-top:6px">${t.title} <span style="font-size:12px;font-weight:600;color:var(--muted)">· ${multi?'Mehrtägig':'Tagesausflug'}</span></h2>`;
+  if(head)head.innerHTML=`<button class="backbtn" id="tripback">‹ Trips</button><h2 style="margin-top:6px">${t.title} <span style="font-size:12px;font-weight:600;color:var(--muted)">· ${multi?'Mehrtägig':'Tagesausflug'}</span>${creator?` <span class="fixlink" id="tripedit">bearbeiten</span>`:''}</h2>`;
   let h="";
   if(creator){ h+=`<div class="tsec"><div class="tsec-h">Wer kommt mit</div><div class="pchips">${MEMBERS.map(n=>`<button class="pchip ${ps.includes(n)?'on':''}" data-act="togglepart" data-id="${n}">${avatar(n)} ${n}</button>`).join("")}</div></div>`; }
   else { h+=`<div class="tsec"><div class="tsec-h">Wer kommt mit</div><div class="who">${ps.map(avatar).join("")}<span style="margin-left:10px;font-size:12.5px;color:var(--muted)">${ps.join(", ")}</span></div></div>`; }
@@ -898,7 +901,7 @@ function renderTripDetail(t,id,wrap,head){
   // Aufgaben
   h+=`<div class="tsec"><div class="tsec-h">✅ Aufgaben</div>`;
   if(!(t.tasks||[]).length) h+=`<div class="pnone">Noch keine Aufgaben.</div>`;
-  (t.tasks||[]).forEach(k=>{ h+=`<div class="task ${k.done?'done':''}"><button class="opt-btn ${k.done?'on':''}" data-act="donetask" data-id="${k.id}">${k.done?'✓':''}</button><div class="task-t">${k.text}</div><button class="task-as" data-act="claimtask" data-id="${k.id}">${k.assignee?avatar(k.assignee)+' '+k.assignee:'übernehmen'}</button></div>`; });
+  (t.tasks||[]).forEach(k=>{ h+=`<div class="task ${k.done?'done':''}"><button class="opt-btn ${k.done?'on':''}" data-act="donetask" data-id="${k.id}">${k.done?'✓':''}</button><div class="task-t">${k.text}</div><select class="task-as-sel" data-id="${k.id}"><option value="">zuweisen…</option>${ps.map(n=>`<option value="${n}" ${k.assignee===n?'selected':''}>${n}</option>`).join("")}</select></div>`; });
   h+=`<div class="addrow"><input id="nk-text" placeholder="z. B. Mietauto reservieren"><button class="addbtn" data-act="addtask">+</button></div></div>`;
   if(multi){
     // Programm
@@ -912,6 +915,8 @@ function renderTripDetail(t,id,wrap,head){
   if(creator){ h+=`<div style="text-align:center;margin-top:14px"><button class="linkbtn" data-act="deltrip" style="color:var(--red)">Trip löschen</button></div>`; }
   wrap.innerHTML=h;
   const bk=document.getElementById("tripback"); if(bk)bk.onclick=closeTrip;
+  const ed=document.getElementById("tripedit"); if(ed)ed.onclick=()=>{ const nv=prompt("Trip-Titel:",t.title); if(nv&&nv.trim())renameTrip(id,nv.trim()); };
+  wrap.querySelectorAll(".task-as-sel").forEach(sel=>sel.onchange=()=>assignTask(id,sel.dataset.id,sel.value));
   wrap.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>handleTripAction(id,b.dataset.act,b.dataset.id));
 }
 function handleTripAction(id,act,oid){
