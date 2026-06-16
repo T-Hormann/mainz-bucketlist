@@ -181,6 +181,24 @@ main{padding:12px 14px 24px}
 .tform.tagmode .mehronly{display:none}
 .tform:not(.tagmode) .tagonly{display:none}
 .task-as-sel{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--bordeaux);background:#fff;max-width:120px}
+/* Chat */
+#chatmsgs{padding:12px 12px 44px;min-height:62vh}
+.chat-day{text-align:center;font-size:11.5px;color:var(--muted);margin:14px 0 10px}
+.msgrow{display:flex;align-items:flex-end;gap:7px;margin-bottom:8px}
+.msgrow.mine{justify-content:flex-end}
+.msg-av{flex:0 0 auto}
+.msg-av .av{width:26px;height:26px;font-size:10px}
+.bubble{max-width:78%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 11px}
+.bubble.b-mine{background:var(--bordeaux);border-color:var(--bordeaux);color:#fff}
+.msg-sender{font-size:11.5px;font-weight:700;margin-bottom:2px}
+.msg-text{font-size:14.5px;line-height:1.35;white-space:pre-wrap;word-break:break-word}
+.msg-time{font-size:10px;color:var(--muted);text-align:right;margin-top:3px}
+.bubble.b-mine .msg-time{color:rgba(255,255,255,.7)}
+.chat-input{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:25;background:var(--bg);border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center}
+.chat-input input{flex:1;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:15px;background:var(--card);color:var(--text);outline:none}
+.chat-input button{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;background:var(--bordeaux);color:#fff;font-size:17px;cursor:pointer}
+.navbtn{position:relative}
+.navdot{display:none;position:absolute;top:0;left:calc(50% + 5px);width:9px;height:9px;border-radius:50%;background:var(--red)}
 /* Detail-Sheet */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .backdrop.open{opacity:1;pointer-events:auto}
@@ -278,11 +296,10 @@ main{padding:12px 14px 24px}
 </section>
 
 <section id="s-chat" class="screen">
-  <div class="ph">
-    <svg class="ic" viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 20.5 12z"/></svg>
-    <h2>Chat</h2>
-    <p>Bald: euer verschlüsselter Gruppen-Chat – direkt in der App, nur für die Agraffen.</p>
-    <div class="badge-soon">kommt bald</div>
+  <div id="chatmsgs"></div>
+  <div class="chat-input">
+    <input id="chat-text" type="text" placeholder="Nachricht an die Agraffen…" autocomplete="off">
+    <button id="chat-send" aria-label="Senden">➤</button>
   </div>
 </section>
 
@@ -291,7 +308,7 @@ main{padding:12px 14px 24px}
   <button class="navbtn" data-s="bucket"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17"/></svg><span class="lb">Bucket List</span></button>
   <button class="navbtn" data-s="events"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg><span class="lb">Events</span></button>
   <button class="navbtn" data-s="trips"><svg viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14"/></svg><span class="lb">Trips</span></button>
-  <button class="navbtn" data-s="chat"><svg viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 20.5 12z"/></svg><span class="lb">Chat</span></button>
+  <button class="navbtn" data-s="chat"><span class="navdot" id="chatdot"></span><svg viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 20.5 12z"/></svg><span class="lb">Chat</span></button>
 </nav>
 
 <div class="backdrop" id="backdrop"></div>
@@ -314,7 +331,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.8";
+const APP_VERSION="2.9";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -716,6 +733,7 @@ function initFirebase(){
     if(pushNeeded) pushMine();
   }, err=>{ setSync(false,"offline"); });
   subscribeTrips(db);
+  subscribeChat(db);
 }
 let pushT=null;
 function pushMine(){
@@ -747,6 +765,7 @@ function setScreen(s){
   if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
   if(s==="events") renderEvents();
   if(s==="trips"){ openTripId=null; renderTrips(); }
+  if(s==="chat"){ renderChat(); markChatSeen(); return; }
   window.scrollTo(0,0);
 }
 document.getElementById("bottomnav").querySelectorAll(".navbtn").forEach(b=>{
@@ -761,6 +780,46 @@ function setView(v){
 }
 document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
+// ======== Chat ========
+let chatMsgs=[], chatRef=null, lastSeenChat=0;
+function esc(s){ return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function subscribeChat(db){
+  lastSeenChat=+(localStorage.getItem("ag-chatseen-"+profile)||0);
+  chatRef=db.ref("groups/"+dbPath+"/chat");
+  chatRef.on("value", async snap=>{
+    const v=snap.val()||{}; const arr=[];
+    for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d) arr.push(d); }
+    arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
+    chatMsgs=arr;
+    if(screen==="chat"){ renderChat(); markChatSeen(); }
+    updateChatDot();
+  });
+}
+function unreadChat(){ return chatMsgs.filter(m=>(m.ts||0)>lastSeenChat && m.sender!==profile).length; }
+function updateChatDot(){ const d=document.getElementById("chatdot"); if(d) d.style.display=unreadChat()>0?"block":"none"; }
+function markChatSeen(){ if(chatMsgs.length){ lastSeenChat=chatMsgs[chatMsgs.length-1].ts||Date.now(); try{localStorage.setItem("ag-chatseen-"+profile,String(lastSeenChat));}catch(e){} } updateChatDot(); }
+async function sendChat(text){ if(!chatRef||!cryptoKey)return; text=(text||"").trim(); if(!text)return; const id="m"+Date.now()+Math.random().toString(36).slice(2,5); try{ chatRef.child(id).set(await encryptObj(cryptoKey,{sender:profile,text,ts:Date.now()})); }catch(e){} }
+function renderChat(){
+  const el=document.getElementById("chatmsgs"); if(!el)return;
+  if(!chatMsgs.length){ el.innerHTML=`<div class="empty" style="padding-top:50px">Noch keine Nachrichten.<br>Schreib der Gruppe etwas!</div>`; return; }
+  let h="", lastDay="";
+  chatMsgs.forEach(m=>{
+    const dt=new Date(m.ts||0);
+    const day=dt.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});
+    if(day!==lastDay){ h+=`<div class="chat-day">${day}</div>`; lastDay=day; }
+    const mine=m.sender===profile;
+    const time=dt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+    h+=`<div class="msgrow ${mine?'mine':''}">${mine?'':`<span class="msg-av">${avatar(m.sender)}</span>`}<div class="bubble ${mine?'b-mine':''}">${mine?'':`<div class="msg-sender" style="color:${COLORS[m.sender]||'#888'}">${esc(m.sender)}</div>`}<div class="msg-text">${esc(m.text)}</div><div class="msg-time">${time}</div></div></div>`;
+  });
+  el.innerHTML=h;
+  window.scrollTo(0,document.body.scrollHeight);
+}
+(function(){
+  const inp=document.getElementById("chat-text"), btn=document.getElementById("chat-send");
+  function go(){ if(inp&&inp.value.trim()){ sendChat(inp.value); inp.value=""; } }
+  if(btn) btn.onclick=go;
+  if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+})();
 // ======== Trips ========
 let trips={}, tripVotes={}, tripsRef=null, votesRef=null, openTripId=null;
 function subscribeTrips(db){
