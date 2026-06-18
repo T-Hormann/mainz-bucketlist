@@ -356,7 +356,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.12";
+const APP_VERSION="2.13";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -813,7 +813,7 @@ function subscribeChat(db){
   chatRef=db.ref("groups/"+dbPath+"/chat");
   chatRef.on("value", async snap=>{
     const v=snap.val()||{}; const arr=[];
-    for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d) arr.push(d); }
+    for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d){ d._id=id; arr.push(d); } }
     arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
     chatMsgs=arr;
     if(screen==="chat"){ renderChat(); markChatSeen(); }
@@ -824,6 +824,13 @@ function unreadChat(){ return chatMsgs.filter(m=>(m.ts||0)>lastSeenChat && m.sen
 function updateChatDot(){ const d=document.getElementById("chatdot"); if(d) d.style.display=unreadChat()>0?"block":"none"; }
 function markChatSeen(){ if(chatMsgs.length){ lastSeenChat=chatMsgs[chatMsgs.length-1].ts||Date.now(); try{localStorage.setItem("ag-chatseen-"+profile,String(lastSeenChat));}catch(e){} } updateChatDot(); }
 async function sendChat(text){ if(!chatRef||!cryptoKey)return; text=(text||"").trim(); if(!text)return; const id="m"+Date.now()+Math.random().toString(36).slice(2,5); try{ chatRef.child(id).set(await encryptObj(cryptoKey,{sender:profile,text,ts:Date.now()})); }catch(e){} }
+async function deleteMsg(id){ if(!chatRef)return; try{ await chatRef.child(id).remove(); }catch(e){} }
+function bindLongPress(el,id){
+  let t=null;
+  const start=e=>{ if(e.target&&e.target.closest&&e.target.closest(".vplay"))return; t=setTimeout(()=>{ t=null; if(confirm("Diese Nachricht löschen?")) deleteMsg(id); },550); };
+  const cancel=()=>{ if(t){clearTimeout(t);t=null;} };
+  el.addEventListener("pointerdown",start); el.addEventListener("pointerup",cancel); el.addEventListener("pointerleave",cancel); el.addEventListener("pointermove",cancel);
+}
 function renderChat(){
   const el=document.getElementById("chatmsgs"); if(!el)return;
   if(!chatMsgs.length){ el.innerHTML=`<div class="empty" style="padding-top:50px">Noch keine Nachrichten.<br>Schreib der Gruppe etwas!</div>`; return; }
@@ -843,14 +850,15 @@ function renderChat(){
     curTs=m.ts||0;
     if(m.type==="voice"){
       const dur=m.dur||0; const dl=Math.floor(dur/60)+":"+String(dur%60).padStart(2,"0");
-      h+=`<div class="bubble voice"><button class="vplay" data-vidx="${i}">▶</button><span class="vwave">🎙️ Sprachnachricht</span><span class="vdur">${dl}</span></div>`;
+      h+=`<div class="bubble voice"${mine?` data-del="${m._id}"`:""}><button class="vplay" data-vidx="${i}">▶</button><span class="vwave">🎙️ Sprachnachricht</span><span class="vdur">${dl}</span></div>`;
     } else {
-      h+=`<div class="bubble"><div class="msg-text">${esc(m.text)}</div></div>`;
+      h+=`<div class="bubble"${mine?` data-del="${m._id}"`:""}><div class="msg-text">${esc(m.text)}</div></div>`;
     }
   });
   if(open) h+="</div>";
   el.innerHTML=h;
   el.querySelectorAll(".vplay").forEach(b=>b.onclick=()=>playVoice(+b.dataset.vidx,b));
+  el.querySelectorAll("[data-del]").forEach(b=>bindLongPress(b,b.dataset.del));
   window.scrollTo(0,document.body.scrollHeight);
 }
 // ---- Sprachnachrichten ----
