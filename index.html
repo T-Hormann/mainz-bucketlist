@@ -198,7 +198,22 @@ main{padding:12px 14px 24px}
 .msg-text{font-size:14.5px;line-height:1.35;white-space:pre-wrap;word-break:break-word}
 .chat-input{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:25;background:var(--bg);border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center}
 .chat-input input{flex:1;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:15px;background:var(--card);color:var(--text);outline:none}
-.chat-input button{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;background:var(--bordeaux);color:#fff;font-size:17px;cursor:pointer}
+.ci-normal{display:flex;gap:8px;align-items:center;flex:1}
+.ci-normal input{flex:1;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:15px;background:var(--card);color:var(--text);outline:none;min-width:0}
+#chat-send,#chat-mic{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;font-size:17px;cursor:pointer}
+#chat-send{background:var(--bordeaux);color:#fff}
+#chat-mic{background:var(--gold-soft);color:#7A5A12}
+.ci-rec{display:flex;align-items:center;gap:10px;flex:1}
+.rec-dot{width:11px;height:11px;border-radius:50%;background:var(--red);animation:recpulse 1s infinite;flex:0 0 auto}
+@keyframes recpulse{50%{opacity:.25}}
+#rec-time{font-size:14px;font-variant-numeric:tabular-nums;color:var(--text)}
+.rec-btn{border:0;background:none;color:var(--muted);font-size:14px;cursor:pointer;padding:7px 9px;border-radius:8px}
+.rec-btn.rec-go{color:#fff;background:var(--bordeaux);font-weight:700}
+.bubble.voice{display:flex;align-items:center;gap:9px;min-width:165px}
+.vplay{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:0;background:var(--gold);color:#fff;font-size:13px;cursor:pointer}
+.grp.mine .vplay{background:#fff;color:var(--bordeaux)}
+.vwave{flex:1;font-size:13px;opacity:.92}
+.vdur{font-size:11px;opacity:.8;font-variant-numeric:tabular-nums}
 .navbtn{position:relative}
 .navdot{display:none;position:absolute;top:0;left:calc(50% + 5px);width:9px;height:9px;border-radius:50%;background:var(--red)}
 /* Detail-Sheet */
@@ -300,8 +315,16 @@ main{padding:12px 14px 24px}
 <section id="s-chat" class="screen">
   <div id="chatmsgs"></div>
   <div class="chat-input">
-    <input id="chat-text" type="text" placeholder="Nachricht an die Agraffen…" autocomplete="off">
-    <button id="chat-send" aria-label="Senden">➤</button>
+    <div class="ci-normal" id="ci-normal">
+      <input id="chat-text" type="text" placeholder="Nachricht an die Agraffen…" autocomplete="off">
+      <button id="chat-mic" aria-label="Sprachnachricht aufnehmen">🎤</button>
+      <button id="chat-send" aria-label="Senden">➤</button>
+    </div>
+    <div class="ci-rec" id="ci-rec" style="display:none">
+      <span class="rec-dot"></span><span id="rec-time">0:00</span><span style="flex:1"></span>
+      <button id="rec-cancel" class="rec-btn">Abbrechen</button>
+      <button id="rec-send" class="rec-btn rec-go">Senden ➤</button>
+    </div>
   </div>
 </section>
 
@@ -333,7 +356,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.11";
+const APP_VERSION="2.12";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -805,7 +828,7 @@ function renderChat(){
   const el=document.getElementById("chatmsgs"); if(!el)return;
   if(!chatMsgs.length){ el.innerHTML=`<div class="empty" style="padding-top:50px">Noch keine Nachrichten.<br>Schreib der Gruppe etwas!</div>`; return; }
   let h="", lastDay="", curSender=null, curTs=0, open=false;
-  chatMsgs.forEach(m=>{
+  chatMsgs.forEach((m,i)=>{
     const dt=new Date(m.ts||0);
     const day=dt.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});
     const mine=m.sender===profile;
@@ -818,17 +841,63 @@ function renderChat(){
       open=true; curSender=m.sender;
     }
     curTs=m.ts||0;
-    h+=`<div class="bubble"><div class="msg-text">${esc(m.text)}</div></div>`;
+    if(m.type==="voice"){
+      const dur=m.dur||0; const dl=Math.floor(dur/60)+":"+String(dur%60).padStart(2,"0");
+      h+=`<div class="bubble voice"><button class="vplay" data-vidx="${i}">▶</button><span class="vwave">🎙️ Sprachnachricht</span><span class="vdur">${dl}</span></div>`;
+    } else {
+      h+=`<div class="bubble"><div class="msg-text">${esc(m.text)}</div></div>`;
+    }
   });
   if(open) h+="</div>";
   el.innerHTML=h;
+  el.querySelectorAll(".vplay").forEach(b=>b.onclick=()=>playVoice(+b.dataset.vidx,b));
   window.scrollTo(0,document.body.scrollHeight);
 }
+// ---- Sprachnachrichten ----
+let mediaRec=null, recChunks=[], recMime="", recStart=0, recTimer=null, curAudio=null, curBtn=null;
+function abToB64(buf){ const b=new Uint8Array(buf); let s=""; const c=0x8000; for(let i=0;i<b.length;i+=c){ s+=String.fromCharCode.apply(null,b.subarray(i,i+c)); } return btoa(s); }
+async function sendVoice(b64,mime,dur){ if(!chatRef||!cryptoKey)return; const id="m"+Date.now()+Math.random().toString(36).slice(2,5); try{ chatRef.child(id).set(await encryptObj(cryptoKey,{sender:profile,ts:Date.now(),type:"voice",audio:b64,mime,dur})); }catch(e){} }
+function recUI(on){ const n=document.getElementById("ci-normal"), r=document.getElementById("ci-rec"); if(n)n.style.display=on?"none":"flex"; if(r)r.style.display=on?"flex":"none"; if(!on){const t=document.getElementById("rec-time"); if(t)t.textContent="0:00";} }
+async function startRec(){
+  if(!navigator.mediaDevices||!window.MediaRecorder){ alert("Sprachnachrichten werden hier leider nicht unterstützt."); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    let opts={}; try{ if(MediaRecorder.isTypeSupported("audio/mp4")) opts={mimeType:"audio/mp4"}; else if(MediaRecorder.isTypeSupported("audio/webm")) opts={mimeType:"audio/webm"}; }catch(e){}
+    mediaRec=new MediaRecorder(stream,opts); recChunks=[]; recMime=mediaRec.mimeType||"audio/mp4";
+    mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size) recChunks.push(e.data); };
+    mediaRec.start(); recStart=Date.now(); recUI(true);
+    recTimer=setInterval(()=>{ const s=Math.floor((Date.now()-recStart)/1000); const t=document.getElementById("rec-time"); if(t)t.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); if(s>=120) finishRec(true); },250);
+  }catch(e){ alert("Kein Zugriff aufs Mikrofon (Berechtigung?)."); }
+}
+function stopTracks(){ try{ if(mediaRec&&mediaRec.stream) mediaRec.stream.getTracks().forEach(t=>t.stop()); }catch(e){} }
+function cancelRec(){ clearInterval(recTimer); if(mediaRec&&mediaRec.state!=="inactive"){ mediaRec.onstop=stopTracks; try{mediaRec.stop();}catch(e){} } recChunks=[]; recUI(false); }
+function finishRec(send){
+  clearInterval(recTimer);
+  if(!mediaRec||mediaRec.state==="inactive"){ recUI(false); return; }
+  const dur=Math.max(1,Math.round((Date.now()-recStart)/1000));
+  mediaRec.onstop=async()=>{ stopTracks(); if(send&&recChunks.length){ const blob=new Blob(recChunks,{type:recMime}); const buf=await blob.arrayBuffer(); sendVoice(abToB64(buf),recMime,dur); } recChunks=[]; };
+  try{ mediaRec.stop(); }catch(e){}
+  recUI(false);
+}
+function playVoice(idx,btn){
+  const m=chatMsgs[idx]; if(!m||!m.audio)return;
+  if(curAudio){ try{curAudio.pause();}catch(e){} if(curBtn)curBtn.textContent="▶"; const same=curBtn===btn; curAudio=null; curBtn=null; if(same) return; }
+  try{
+    const blob=new Blob([ub64(m.audio)],{type:m.mime||"audio/mp4"});
+    const url=URL.createObjectURL(blob); const a=new Audio(url); curAudio=a; curBtn=btn; btn.textContent="⏸";
+    a.onended=()=>{ btn.textContent="▶"; try{URL.revokeObjectURL(url);}catch(e){} curAudio=null; curBtn=null; };
+    a.play().catch(()=>{ btn.textContent="▶"; curAudio=null; curBtn=null; });
+  }catch(e){}
+}
 (function(){
-  const inp=document.getElementById("chat-text"), btn=document.getElementById("chat-send");
+  const inp=document.getElementById("chat-text"), btn=document.getElementById("chat-send"), mic=document.getElementById("chat-mic");
   function go(){ if(inp&&inp.value.trim()){ sendChat(inp.value); inp.value=""; } }
   if(btn) btn.onclick=go;
   if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+  if(mic) mic.onclick=startRec;
+  const rc=document.getElementById("rec-cancel"), rs=document.getElementById("rec-send");
+  if(rc) rc.onclick=cancelRec;
+  if(rs) rs.onclick=()=>finishRec(true);
 })();
 // ======== Trips ========
 let trips={}, tripVotes={}, tripsRef=null, votesRef=null, openTripId=null;
