@@ -356,7 +356,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.13";
+const APP_VERSION="2.14";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1421,6 +1421,12 @@ async function boot(){
     else { ptr.style.transition="transform .25s"; ptr.style.transform="translateY(-56px)"; }
   },{passive:true});
 })();
+// ======== Service Worker (Offline-Fähigkeit) ========
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").then(reg=>{ try{reg.update();}catch(e){} }).catch(()=>{});
+  });
+}
 boot();
 </script>
 </body>
