@@ -307,6 +307,19 @@ textarea.finp{resize:vertical}
 .cbtn{flex:0 0 auto;border:0;border-radius:11px;padding:10px 16px;font-size:14px;font-weight:700;background:var(--bordeaux);color:#fff;cursor:pointer}
 .cbtn:disabled{opacity:.6}
 .ccount{text-align:right;font-size:11px;color:var(--muted);margin-top:4px}
+.hcard .ttl{font-size:15px;font-weight:600;color:var(--text);margin:2px 0}
+.kbtns{display:flex;gap:10px;margin:12px 14px 0}
+.kbtns .btn{flex:1}
+.kent{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.kent:last-child{border-bottom:0}
+.kent-b{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.kent-t{font-size:14.5px;color:var(--text)}
+.kent-s{font-size:12px;color:var(--muted)}
+.kent .amt{font-weight:600;font-variant-numeric:tabular-nums}
+.kdel{flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
+.kchecks{display:flex;flex-wrap:wrap;gap:9px}
+.kcheck{display:flex;align-items:center;gap:6px;font-size:14.5px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
+.kcheck input{width:16px;height:16px}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -333,6 +346,7 @@ textarea.finp{resize:vertical}
 
 <section id="s-home" class="screen active"></section>
 <section id="s-profile" class="screen"></section>
+<section id="s-kasse" class="screen"></section>
 
 <section id="s-bucket" class="screen">
   <nav class="tabs" id="tabs"></nav>
@@ -392,6 +406,7 @@ textarea.finp{resize:vertical}
 <div class="sheet" id="sheet"></div>
 <button id="addspot" class="fab" title="Spot hinzufügen"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 <div class="spotov" id="spotov"></div>
+<div class="spotov" id="kasseov"></div>
 <div class="overlay" id="overlay"></div>
 
 <script>
@@ -410,7 +425,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.26";
+const APP_VERSION="2.27";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -840,6 +855,7 @@ function initFirebase(){
   subscribeSpots(db);
   subscribeChat(db);
   subscribeComments(db);
+  subscribeKasse(db);
 }
 let pushT=null;
 function pushMine(){
@@ -870,6 +886,7 @@ function setScreen(s){
   const fab=document.getElementById("addspot"); if(fab) fab.classList.toggle("show", s==="bucket");
   if(s==="home") renderHome();
   if(s==="profile") renderProfile();
+  if(s==="kasse") renderKasse();
   if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
   if(s==="events") renderEvents();
   if(s==="trips"){ openTripId=null; renderTrips(); }
@@ -1249,16 +1266,12 @@ function renderHome(){
   });
   h+=`<p style="font-size:12px;color:var(--muted);margin-top:8px">Tipp: Auf einen Namen tippen für sein Profil.</p></div>`;
 
-  // 5) Gemeinsame Kasse (Splitwise-Mockup)
-  h+=`<div class="hcard soon"><h3>💶 Gemeinsame Kasse <span class="badge-soon">Vorschau</span></h3>
-      <div class="ttl">Ausgaben fair teilen</div>
-      <div class="kasse">
-        <div class="krow">${avatar("Kirsten")}<span class="txt">Kirsten hat ausgelegt · Weinprobe</span><span class="amt">50 €</span></div>
-        <div class="krow">${avatar("Tom")}<span class="txt">Du bekommst zurück</span><span class="amt plus">+12,50 €</span></div>
-        <div class="krow">${avatar("Kathrin")}<span class="txt">Kathrin schuldet der Kasse</span><span class="amt minus">−8,00 €</span></div>
-      </div>
-      <button class="kbtn" disabled><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ausgabe hinzufügen</button>
-      <p>Bald: Ausgaben eintragen, die App rechnet aus, wer wem was schuldet – wie Splitwise, nur für die Agraffen.</p></div>`;
+  // 5) Gemeinsame Kasse (echt)
+  const kb=kasseBalances(); const myBal=Math.round((kb[profile]||0)*100)/100; const anyK=Object.keys(kasse).length;
+  let kLine;
+  if(!anyK){ kLine=`<div class="ttl">Noch keine Ausgaben</div><p>Trag die erste gemeinsame Ausgabe ein – die App rechnet aus, wer wem was schuldet.</p>`; }
+  else { const st = myBal>0.005?`Du bekommst <b class="amt plus">${eur(myBal)}</b>`:(myBal<-0.005?`Du schuldest <b class="amt minus">${eur(-myBal)}</b>`:`Du bist ausgeglichen ✓`); kLine=`<div class="ttl">${st}</div><p>${anyK} Eintrag${anyK>1?"e":""} · tippe für Details.</p>`; }
+  h+=`<div class="hcard"><h3>💶 Gemeinsame Kasse</h3>${kLine}<button class="kbtn" id="kasseopen" style="margin-top:11px">Kasse öffnen</button></div>`;
 
   // 6) Abstimmungen
   h+=`<div class="hcard soon"><h3>🗳️ Abstimmungen <span class="badge-soon">bald</span></h3>
@@ -1272,6 +1285,7 @@ function renderHome(){
   const tb=document.getElementById("trbtn"); if(tb) tb.onclick=()=>{ setScreen("trips"); const nt=nextTrip(); if(nt) openTrip(nt.id); };
   const pb=document.getElementById("profbtn"); if(pb) pb.onclick=()=>openProfile(profile);
   el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
+  const ko=document.getElementById("kasseopen"); if(ko) ko.onclick=()=>setScreen("kasse");
 }
 let profileView=null;
 function openProfile(name){ profileView=name; setScreen("profile"); }
@@ -1318,6 +1332,153 @@ function korkenRoulette(){
   if(!open.length){ alert("Ihr habt schon alles erlebt! 🎉"); return; }
   const pick=open[Math.floor(Math.random()*open.length)];
   openSheet(pick.id);
+}
+
+// ======== Kasse (Splitwise) ========
+let kasseRef=null, kasse={};
+function subscribeKasse(db){
+  kasseRef=db.ref("groups/"+dbPath+"/kasse");
+  kasseRef.on("value", async snap=>{
+    const v=snap.val()||{}; const nx={};
+    for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d){ d.id=id; nx[id]=d; } }
+    kasse=nx;
+    if(screen==="kasse") renderKasse();
+    if(screen==="home") renderHome();
+  }, err=>{});
+}
+function eur(x){ return (Math.round(x*100)/100).toFixed(2).replace(".",",")+" €"; }
+function kasseBalances(){
+  const bal={}; MEMBERS.forEach(n=>bal[n]=0);
+  Object.values(kasse).forEach(e=>{
+    if(e.type==="expense"){
+      const parts=(e.parts||[]).filter(n=>bal[n]!==undefined);
+      if(!parts.length||!e.amount) return;
+      const share=e.amount/parts.length;
+      if(bal[e.payer]!==undefined) bal[e.payer]+=e.amount;
+      parts.forEach(n=>{ bal[n]-=share; });
+    } else if(e.type==="settle"){
+      if(bal[e.from]!==undefined) bal[e.from]+=e.amount;
+      if(bal[e.to]!==undefined) bal[e.to]-=e.amount;
+    }
+  });
+  return bal;
+}
+function simplifyDebts(bal){
+  const cred=[], deb=[];
+  MEMBERS.forEach(n=>{ const v=Math.round((bal[n]||0)*100)/100; if(v>0.005) cred.push({n,v}); else if(v<-0.005) deb.push({n,v:-v}); });
+  cred.sort((a,b)=>b.v-a.v); deb.sort((a,b)=>b.v-a.v);
+  const out=[]; let i=0,j=0;
+  while(i<deb.length&&j<cred.length){
+    const pay=Math.min(deb[i].v,cred[j].v);
+    out.push({from:deb[i].n,to:cred[j].n,amount:Math.round(pay*100)/100});
+    deb[i].v-=pay; cred[j].v-=pay;
+    if(deb[i].v<0.005)i++; if(cred[j].v<0.005)j++;
+  }
+  return out;
+}
+function renderKasse(){
+  const el=document.getElementById("s-kasse"); if(!el)return;
+  const bal=kasseBalances(); const debts=simplifyDebts(bal);
+  const entries=Object.values(kasse).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  let h=`<button class="pback" id="kback">‹ Home</button>`;
+  h+=`<div class="pf-top" style="padding-bottom:2px"><div style="font-size:30px">💶</div><div><div class="pf-name">Gemeinsame Kasse</div><div class="pf-sub">Ausgaben fair teilen</div></div></div>`;
+  h+=`<div class="hcard"><h3>📊 Salden</h3>`;
+  MEMBERS.forEach(n=>{ const v=Math.round((bal[n]||0)*100)/100; const cls=v>0.005?"plus":(v<-0.005?"minus":""); h+=`<div class="krow">${avatar(n)}<span class="txt">${n}</span><span class="amt ${cls}">${v>0.005?eur(v):(v<-0.005?"−"+eur(-v):"±0,00 €")}</span></div>`; });
+  h+=`</div>`;
+  h+=`<div class="hcard"><h3>🔁 Wer schuldet wem</h3>`;
+  if(debts.length){ debts.forEach(d=>{ h+=`<div class="krow"><span class="txt">${avatar(d.from)} ${d.from} → ${avatar(d.to)} ${d.to}</span><span class="amt">${eur(d.amount)}</span></div>`; }); }
+  else h+=`<div class="pnone">Alles ausgeglichen 🎉</div>`;
+  h+=`</div>`;
+  h+=`<div class="kbtns"><button class="btn check-btn done" id="kexp">+ Ausgabe</button><button class="btn check-btn" id="ksettle">Ausgleich buchen</button></div>`;
+  h+=`<div class="hcard"><h3>🧾 Verlauf</h3>`;
+  if(entries.length){
+    entries.forEach(e=>{
+      const del = e.by===profile ? `<button class="kdel" data-del="${e.id}">✕</button>` : "";
+      if(e.type==="expense"){ const np=(e.parts||[]).length; h+=`<div class="kent"><div class="kent-b"><span class="kent-t">${esc(e.desc||"Ausgabe")}</span><span class="kent-s">${esc(e.payer||"?")} hat gezahlt · geteilt durch ${np}</span></div><span class="amt">${eur(e.amount)}</span>${del}</div>`; }
+      else { h+=`<div class="kent"><div class="kent-b"><span class="kent-t">Ausgleich: ${esc(e.from||"?")} → ${esc(e.to||"?")}</span><span class="kent-s">Rückzahlung</span></div><span class="amt">${eur(e.amount)}</span>${del}</div>`; }
+    });
+  } else h+=`<div class="pnone">Noch keine Einträge.</div>`;
+  h+=`</div>`;
+  el.innerHTML=h;
+  document.getElementById("kback").onclick=()=>setScreen("home");
+  document.getElementById("kexp").onclick=openExpenseForm;
+  document.getElementById("ksettle").onclick=openSettleForm;
+  el.querySelectorAll(".kdel[data-del]").forEach(b=>b.onclick=()=>deleteKasseEntry(b.dataset.del));
+}
+function openExpenseForm(){
+  const ov=document.getElementById("kasseov");
+  const payerOpts=MEMBERS.map(n=>`<option value="${n}" ${n===profile?"selected":""}>${n}</option>`).join("");
+  const partChecks=MEMBERS.map(n=>`<label class="kcheck"><input type="checkbox" value="${n}" checked> ${n}</label>`).join("");
+  ov.innerHTML=`<div class="spotcard">
+    <div class="spot-h"><h2>Ausgabe eintragen</h2><button class="spot-x" id="kx">✕</button></div>
+    <label class="fl">Wofür?</label>
+    <input class="finp" id="k-desc" placeholder="z. B. Weinprobe, Pizza, Benzin">
+    <label class="fl">Betrag (€)</label>
+    <input class="finp" id="k-amount" inputmode="decimal" placeholder="0,00">
+    <label class="fl">Wer hat gezahlt?</label>
+    <select class="finp" id="k-payer">${payerOpts}</select>
+    <label class="fl">Geteilt unter (Anteil zu gleichen Teilen)</label>
+    <div class="kchecks" id="k-parts">${partChecks}</div>
+    <p class="spot-hint" id="k-hint"></p>
+    <div class="spot-actions"><button class="btn check-btn done" id="k-save">Speichern</button></div>
+  </div>`;
+  ov.classList.add("show");
+  document.getElementById("kx").onclick=closeKasseForm;
+  document.getElementById("k-save").onclick=submitExpense;
+}
+async function submitExpense(){
+  const desc=document.getElementById("k-desc").value.trim();
+  const amount=parseFloat((document.getElementById("k-amount").value||"").replace(",","."));
+  const payer=document.getElementById("k-payer").value;
+  const parts=[...document.querySelectorAll("#k-parts input:checked")].map(c=>c.value);
+  const hint=document.getElementById("k-hint");
+  if(!amount||amount<=0){ hint.textContent="Bitte einen gültigen Betrag eingeben."; return; }
+  if(!parts.length){ hint.textContent="Mindestens eine Person auswählen."; return; }
+  await saveKasseEntry({type:"expense", desc:desc||"Ausgabe", amount:Math.round(amount*100)/100, payer, parts});
+  closeKasseForm();
+}
+function openSettleForm(){
+  const ov=document.getElementById("kasseov");
+  const fromOpts=MEMBERS.map(n=>`<option value="${n}" ${n===profile?"selected":""}>${n}</option>`).join("");
+  const toOpts=MEMBERS.map((n,i)=>`<option value="${n}" ${i===1?"selected":""}>${n}</option>`).join("");
+  ov.innerHTML=`<div class="spotcard">
+    <div class="spot-h"><h2>Ausgleich buchen</h2><button class="spot-x" id="kx">✕</button></div>
+    <label class="fl">Wer zahlt zurück?</label>
+    <select class="finp" id="s-from">${fromOpts}</select>
+    <label class="fl">An wen?</label>
+    <select class="finp" id="s-to">${toOpts}</select>
+    <label class="fl">Betrag (€)</label>
+    <input class="finp" id="s-amount" inputmode="decimal" placeholder="0,00">
+    <p class="spot-hint" id="s-hint"></p>
+    <div class="spot-actions"><button class="btn check-btn done" id="s-save">Speichern</button></div>
+  </div>`;
+  ov.classList.add("show");
+  document.getElementById("kx").onclick=closeKasseForm;
+  document.getElementById("s-save").onclick=submitSettle;
+}
+async function submitSettle(){
+  const from=document.getElementById("s-from").value;
+  const to=document.getElementById("s-to").value;
+  const amount=parseFloat((document.getElementById("s-amount").value||"").replace(",","."));
+  const hint=document.getElementById("s-hint");
+  if(from===to){ hint.textContent="Bitte zwei verschiedene Personen wählen."; return; }
+  if(!amount||amount<=0){ hint.textContent="Bitte einen gültigen Betrag eingeben."; return; }
+  await saveKasseEntry({type:"settle", from, to, amount:Math.round(amount*100)/100});
+  closeKasseForm();
+}
+function closeKasseForm(){ const ov=document.getElementById("kasseov"); ov.classList.remove("show"); ov.innerHTML=""; }
+async function saveKasseEntry(entry){
+  if(!kasseRef||!cryptoKey){ alert("Keine Verbindung – Eintrag kann gerade nicht gespeichert werden."); return; }
+  const id="k"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const rec={...entry, by:profile, ts:Date.now()};
+  kasse[id]={id,...rec}; if(screen==="kasse")renderKasse();
+  try{ await kasseRef.child(id).set(await encryptObj(cryptoKey,rec)); }catch(e){}
+}
+async function deleteKasseEntry(id){
+  const e=kasse[id]; if(!e||e.by!==profile)return;
+  if(!confirm("Diesen Eintrag löschen?"))return;
+  try{ await kasseRef.child(id).remove(); }catch(e){}
+  delete kasse[id]; renderKasse();
 }
 
 // ======== Bucket List ========
@@ -1380,6 +1541,7 @@ function render(){
   if(screen==="bucket"){ renderTabs(); renderMain(); if(view==="karte"&&map) renderMap(); }
   if(screen==="home") renderHome();
   if(screen==="profile") renderProfile();
+  if(screen==="kasse") renderKasse();
   updateAppbar();
 }
 
