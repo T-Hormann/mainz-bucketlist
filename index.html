@@ -399,7 +399,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.23";
+const APP_VERSION="2.24";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1620,7 +1620,9 @@ async function boot(){
   ov.classList.remove("show");
   let startScreen="home";
   try{ const sc=new URLSearchParams(location.search).get("scr"); if(["home","bucket","events","trips","chat","profile"].includes(sc)) startScreen=sc; }catch(e){}
-  setScreen(startScreen);
+  setScreen("home");
+  // iOS: erst Home layouten lassen, dann auf Ziel-Screen wechseln (sonst sitzt die untere Leiste auf kurzen Seiten falsch)
+  if(startScreen!=="home"){ setTimeout(()=>setScreen(startScreen), 60); }
   updateAppbar();
   loadEvents();
   setSync(false,"verbinde…");
