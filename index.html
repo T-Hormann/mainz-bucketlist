@@ -410,7 +410,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.25";
+const APP_VERSION="2.26";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1296,7 +1296,6 @@ function renderProfile(){
   const s=statsFor(name);
   const pct=s.total?Math.round(s.doneN/s.total*100):0;
   const isMe=(name===profile);
-  const rank=MEMBERS.map(n=>({n,c:DATA.filter(d=>(n===profile?done:(members[n]&&members[n].done)||{})[d.id]).length})).sort((a,b)=>b.c-a.c);
   let h="";
   h+=`<button class="pback" id="pfback">‹ Home</button>`;
   h+=`<div class="pf-top">${avatar(name)}<div><div class="pf-name">${name}${isMe?' <span style="font-size:13px;color:var(--muted);font-weight:500">(du)</span>':''}</div><div class="pf-sub">${s.fav?`Lieblingskategorie: ${s.fav.emoji} ${s.fav.label}`:'Noch keine Kategorie erkundet'}</div></div></div>`;
@@ -1311,15 +1310,8 @@ function renderProfile(){
     h+=`<div class="pcat"><div class="pl"><span class="nm">${x.emoji} ${x.label}</span></div><div class="pmini"><span style="width:${p}%"></span></div><div class="pn">${x.dc}/${x.t}</div></div>`;
   });
   h+=`</div>`;
-  // Leaderboard
-  h+=`<div class="hcard"><h3>🏆 Leaderboard</h3>`;
-  rank.forEach((r,i)=>{
-    h+=`<div class="rank-row clk ${r.n===name?'me':''}" data-p="${r.n}"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
-  });
-  h+=`<p style="font-size:12px;color:var(--muted);margin-top:8px">Tippe einen Namen an, um sein Profil zu sehen.</p></div>`;
   el.innerHTML=h;
   const bk=document.getElementById("pfback"); if(bk) bk.onclick=()=>{ profileView=null; setScreen("home"); };
-  el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
 }
 function korkenRoulette(){
   const open=DATA.filter(d=>!done[d.id]);
