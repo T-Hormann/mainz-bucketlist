@@ -2,18 +2,187 @@
   "updated": "2026-07-06",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
-    {"name": "Öffentliche Führung „Kellerlabyrinth Oppenheim“", "start": "2026-07-08T13:30:00", "venue": "Oppenheimer Kellerlabyrinth", "city": "Oppenheim", "cat": "Stadt & Kultur"},
-    {"name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell", "start": "2026-07-10T16:00:00", "venue": "Weingut Geheimrat Schnell", "city": "Guntersblum", "cat": "Weinmarkt"},
-    {"name": "Hoffest im Weingut Jung", "start": "2026-07-10T17:00:00", "venue": "Weingut Jung", "city": "Undenheim", "cat": "Hoffest"},
-    {"name": "WINEHATTAN – Hoffest im Weingut Hagemann", "start": "2026-07-10T18:00:00", "venue": "Weingut Hagemann Charlottenhof", "city": "Weinolsheim", "cat": "Hoffest"},
-    {"name": "HIESTAND's Wein & Wandern", "start": "2026-07-11T14:00:00", "venue": "HIESTAND Weingut & Hofbrennerei", "city": "Guntersblum", "cat": "Weinwanderung"},
-    {"name": "Weinlounge im Paulinenhof", "start": "2026-07-11T16:00:00", "venue": "Weingut Paulinenhof", "city": "Selzen", "cat": "Weinlounge"},
-    {"name": "After Work Schobbe (Weingut am Honigberg)", "start": "2026-07-15T18:00:00", "venue": "Weingut am Honigberg", "city": "Ludwigshöhe", "cat": "Weinlounge"},
-    {"name": "Wine Pop Up Mainz", "start": "2026-07-23T17:00:00", "venue": "Kulturei an der Zitadelle", "city": "Mainz", "cat": "Weinfest"},
-    {"name": "Nackenheimer Weinfest", "start": "2026-07-24T17:00:00", "venue": "Ortsmitte Nackenheim", "city": "Nackenheim", "cat": "Weinfest"},
-    {"name": "Wine Pop Up Mainz", "start": "2026-08-27T17:00:00", "venue": "Kulturei an der Zitadelle", "city": "Mainz", "cat": "Weinfest"},
-    {"name": "Mainzer Weinmarkt (1. Wochenende)", "start": "2026-08-27T15:00:00", "venue": "Stadtpark & Volkspark", "city": "Mainz", "cat": "Weinfest"},
-    {"name": "Mainzer Weinmarkt (2. Wochenende)", "start": "2026-09-03T15:00:00", "venue": "Stadtpark & Volkspark", "city": "Mainz", "cat": "Weinfest"},
-    {"name": "HIESTAND's Wein & Wandern", "start": "2026-09-12T14:00:00", "venue": "HIESTAND Weingut & Hofbrennerei", "city": "Guntersblum", "cat": "Weinwanderung"}
+    {
+      "name": "Öffentliche Führung „Kellerlabyrinth Oppenheim“",
+      "start": "2026-07-08T13:30:00",
+      "venue": "Oppenheimer Kellerlabyrinth",
+      "city": "Oppenheim",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "Öffentliche Führung \"Kellerlabyrinth Oppenheim\"",
+      "start": "2026-07-08T13:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "After Work Schobbe",
+      "start": "2026-07-08T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
+    },
+    {
+      "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
+      "start": "2026-07-10T16:00:00",
+      "venue": "Weingut Geheimrat Schnell",
+      "city": "Guntersblum",
+      "cat": "Weinmarkt"
+    },
+    {
+      "name": "Hoffest im Weingut Jung",
+      "start": "2026-07-10T17:00:00",
+      "venue": "Weingut Jung",
+      "city": "Undenheim",
+      "cat": "Hoffest"
+    },
+    {
+      "name": "WINEHATTAN – Hoffest im Weingut Hagemann",
+      "start": "2026-07-10T18:00:00",
+      "venue": "Weingut Hagemann Charlottenhof",
+      "city": "Weinolsheim",
+      "cat": "Hoffest"
+    },
+    {
+      "name": "WINEHATTAN - Hoffest im Weingut Hagemann",
+      "start": "2026-07-10T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Hoffest"
+    },
+    {
+      "name": "HIESTAND's Wein & Wandern",
+      "start": "2026-07-11T14:00:00",
+      "venue": "HIESTAND Weingut & Hofbrennerei",
+      "city": "Guntersblum",
+      "cat": "Weinwanderung"
+    },
+    {
+      "name": "HIESTAND´s Wein & Wandern",
+      "start": "2026-07-11T14:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Weinlounge im Paulinenhof",
+      "start": "2026-07-11T16:00:00",
+      "venue": "Weingut Paulinenhof",
+      "city": "Selzen",
+      "cat": "Weinlounge"
+    },
+    {
+      "name": "After Work Schobbe (Weingut am Honigberg)",
+      "start": "2026-07-15T18:00:00",
+      "venue": "Weingut am Honigberg",
+      "city": "Ludwigshöhe",
+      "cat": "Weinlounge"
+    },
+    {
+      "name": "DämmerSchobbe",
+      "start": "2026-07-16T17:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
+    },
+    {
+      "name": "Hoffest im Lindenhof",
+      "start": "2026-07-17T16:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Hoffest"
+    },
+    {
+      "name": "Trilogie vom Riesling im Weingut Krebs-Grode",
+      "start": "2026-07-17T22:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Wine Pop Up Mainz",
+      "start": "2026-07-23T17:00:00",
+      "venue": "Kulturei an der Zitadelle",
+      "city": "Mainz",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Nackenheimer Weinfest",
+      "start": "2026-07-24T17:00:00",
+      "venue": "Ortsmitte Nackenheim",
+      "city": "Nackenheim",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "\"Schobbergass\" - Schobbe in der Obergass'",
+      "start": "2026-07-24T17:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
+    },
+    {
+      "name": "Stückfass Weinwissen und Weinprobe",
+      "start": "2026-07-24T18:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinprobe"
+    },
+    {
+      "name": "Wein- und Kräuterwanderung am Roten Hang",
+      "start": "2026-07-25T12:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinwanderung"
+    },
+    {
+      "name": "KulturSINN | Sommermatinée",
+      "start": "2026-07-26T11:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "Große Qualitäts-Weinprobe zur Einstimmung auf das Niersteiner Winzerfest",
+      "start": "2026-07-30T19:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinprobe"
+    },
+    {
+      "name": "Niersteiner Winzerfest",
+      "start": "2026-07-31T15:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Mainzer Weinmarkt (1. Wochenende)",
+      "start": "2026-08-27T15:00:00",
+      "venue": "Stadtpark & Volkspark",
+      "city": "Mainz",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Wine Pop Up Mainz",
+      "start": "2026-08-27T17:00:00",
+      "venue": "Kulturei an der Zitadelle",
+      "city": "Mainz",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Mainzer Weinmarkt (2. Wochenende)",
+      "start": "2026-09-03T15:00:00",
+      "venue": "Stadtpark & Volkspark",
+      "city": "Mainz",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "HIESTAND's Wein & Wandern",
+      "start": "2026-09-12T14:00:00",
+      "venue": "HIESTAND Weingut & Hofbrennerei",
+      "city": "Guntersblum",
+      "cat": "Weinwanderung"
+    }
   ]
 }
