@@ -256,6 +256,29 @@ main{padding:12px 14px 24px}
 #ptr.spinning .spin{animation:ptrspin .8s linear infinite}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
 .ver{text-align:center;font-size:11px;color:#C3B6A0;padding:16px 0 4px}
+.greet-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.profbtn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;color:var(--text);cursor:pointer;font-weight:600;white-space:nowrap}
+.pback{display:inline-flex;align-items:center;gap:5px;background:none;border:0;color:var(--bordeaux);font-size:14px;font-weight:600;padding:12px 14px 2px;cursor:pointer}
+.pf-top{display:flex;align-items:center;gap:13px;padding:6px 16px 4px}
+.pf-top .av{width:52px;height:52px;font-size:20px}
+.pf-name{font-size:19px;font-weight:700}
+.pf-sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+.pbar{height:10px;border-radius:6px;background:var(--line2);overflow:hidden;margin-top:8px}
+.pbar>span{display:block;height:100%;background:var(--bordeaux);border-radius:6px;transition:width .4s}
+.pbig{font-size:26px;font-weight:700;color:var(--text);line-height:1.1}
+.pbig small{font-size:13px;color:var(--muted);font-weight:500}
+.pstats2{display:flex;gap:12px;margin:12px 14px 0}
+.pstats2 .pbox{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px}
+.pstats2 .pbox .pk{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.pcat{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:13.5px}
+.pcat:last-child{border-bottom:0}
+.pcat .pl{flex:1;display:flex;align-items:center;gap:6px;min-width:0}
+.pcat .pl span.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcat .pmini{width:64px;height:7px;border-radius:5px;background:var(--line2);overflow:hidden;flex:0 0 auto}
+.pcat .pmini>span{display:block;height:100%;background:var(--gold);border-radius:5px}
+.pcat .pn{color:var(--bordeaux);font-weight:600;font-variant-numeric:tabular-nums;width:46px;text-align:right;flex:0 0 auto}
+.rank-row.clk{cursor:pointer}
+.rank-row.me{background:var(--line2);border-radius:8px;margin:2px -8px;padding-left:8px;padding-right:8px}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -281,6 +304,7 @@ main{padding:12px 14px 24px}
 </div>
 
 <section id="s-home" class="screen active"></section>
+<section id="s-profile" class="screen"></section>
 
 <section id="s-bucket" class="screen">
   <nav class="tabs" id="tabs"></nav>
@@ -356,7 +380,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.17";
+const APP_VERSION="2.18";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -805,6 +829,7 @@ function setScreen(s){
   document.querySelectorAll(".screen").forEach(el=>el.classList.toggle("active", el.id==="s-"+s));
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active", b.dataset.s===s));
   if(s==="home") renderHome();
+  if(s==="profile") renderProfile();
   if(s==="bucket"){ renderTabs(); renderMain(); setView(view); }
   if(s==="events") renderEvents();
   if(s==="trips"){ openTripId=null; renderTrips(); }
@@ -1164,7 +1189,7 @@ function renderHome(){
   const groupTotal=Object.keys(groupIds).length;
   const rank=MEMBERS.map(n=>({n, c:doneCountOf(n)})).sort((a,b)=>b.c-a.c);
   let h="";
-  h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
+  h+=`<div class="greet"><div class="greet-row"><div><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div><button class="profbtn" id="profbtn">${avatar(profile)} Mein Profil ›</button></div></div>`;
 
   // 1) Event der Woche
   h+=eventOfWeekCard();
@@ -1179,9 +1204,9 @@ function renderHome(){
   // 4) Ranking (funktional)
   h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
   rank.forEach((r,i)=>{
-    h+=`<div class="rank-row"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
+    h+=`<div class="rank-row clk" data-p="${r.n}"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
   });
-  h+=`</div>`;
+  h+=`<p style="font-size:12px;color:var(--muted);margin-top:8px">Tipp: Auf einen Namen tippen für sein Profil.</p></div>`;
 
   // 5) Gemeinsame Kasse (Splitwise-Mockup)
   h+=`<div class="hcard soon"><h3>💶 Gemeinsame Kasse <span class="badge-soon">Vorschau</span></h3>
@@ -1204,6 +1229,56 @@ function renderHome(){
   const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
   const eb=document.getElementById("eowbtn"); if(eb) eb.onclick=()=>setScreen("events");
   const tb=document.getElementById("trbtn"); if(tb) tb.onclick=()=>{ setScreen("trips"); const nt=nextTrip(); if(nt) openTrip(nt.id); };
+  const pb=document.getElementById("profbtn"); if(pb) pb.onclick=()=>openProfile(profile);
+  el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
+}
+let profileView=null;
+function openProfile(name){ profileView=name; setScreen("profile"); }
+function statsFor(name){
+  const md=(name===profile)?{done,ratings}:(members[name]||{done:{},ratings:{}});
+  const dObj=md.done||{}, rObj=md.ratings||{};
+  const doneN=DATA.filter(d=>dObj[d.id]).length;
+  const rated=DATA.filter(d=>rObj[d.id]);
+  const rGiven=rated.length;
+  const rAvg=rGiven?rated.reduce((s,d)=>s+rObj[d.id],0)/rGiven:0;
+  const cats=Object.keys(CATS).map(c=>{
+    const t=DATA.filter(d=>d.cat===c).length;
+    const dc=DATA.filter(d=>d.cat===c&&dObj[d.id]).length;
+    return {c,label:CATS[c].label,emoji:CATS[c].emoji,t,dc};
+  });
+  let fav=null; cats.forEach(x=>{ if(x.dc>0 && (!fav || x.dc>fav.dc || (x.dc===fav.dc && x.dc/x.t>fav.dc/fav.t))) fav=x; });
+  return {doneN,total:DATA.length,rGiven,rAvg,cats,fav};
+}
+function renderProfile(){
+  const el=document.getElementById("s-profile"); if(!el)return;
+  const name=profileView||profile;
+  const s=statsFor(name);
+  const pct=s.total?Math.round(s.doneN/s.total*100):0;
+  const isMe=(name===profile);
+  const rank=MEMBERS.map(n=>({n,c:DATA.filter(d=>(n===profile?done:(members[n]&&members[n].done)||{})[d.id]).length})).sort((a,b)=>b.c-a.c);
+  let h="";
+  h+=`<button class="pback" id="pfback">‹ Home</button>`;
+  h+=`<div class="pf-top">${avatar(name)}<div><div class="pf-name">${name}${isMe?' <span style="font-size:13px;color:var(--muted);font-weight:500">(du)</span>':''}</div><div class="pf-sub">${s.fav?`Lieblingskategorie: ${s.fav.emoji} ${s.fav.label}`:'Noch keine Kategorie erkundet'}</div></div></div>`;
+  // Fortschritt
+  h+=`<div class="hcard"><h3>🎯 Fortschritt</h3><div class="pbig">${s.doneN} <small>/ ${s.total} erledigt · ${pct}%</small></div><div class="pbar"><span style="width:${pct}%"></span></div></div>`;
+  // Bewertungen
+  h+=`<div class="pstats2"><div class="pbox"><div class="pk">Bewertungen</div><div class="pbig">${s.rGiven}</div></div><div class="pbox"><div class="pk">Ø Bewertung</div><div class="pbig">${s.rGiven?s.rAvg.toFixed(1):'–'} <small>${s.rGiven?'🍷':''}</small></div></div></div>`;
+  // Kategorien
+  h+=`<div class="hcard"><h3>📊 Nach Kategorie</h3>`;
+  s.cats.forEach(x=>{
+    const p=x.t?Math.round(x.dc/x.t*100):0;
+    h+=`<div class="pcat"><div class="pl"><span class="nm">${x.emoji} ${x.label}</span></div><div class="pmini"><span style="width:${p}%"></span></div><div class="pn">${x.dc}/${x.t}</div></div>`;
+  });
+  h+=`</div>`;
+  // Leaderboard
+  h+=`<div class="hcard"><h3>🏆 Leaderboard</h3>`;
+  rank.forEach((r,i)=>{
+    h+=`<div class="rank-row clk ${r.n===name?'me':''}" data-p="${r.n}"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
+  });
+  h+=`<p style="font-size:12px;color:var(--muted);margin-top:8px">Tippe einen Namen an, um sein Profil zu sehen.</p></div>`;
+  el.innerHTML=h;
+  const bk=document.getElementById("pfback"); if(bk) bk.onclick=()=>{ profileView=null; setScreen("home"); };
+  el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
 }
 function korkenRoulette(){
   const open=DATA.filter(d=>!done[d.id]);
@@ -1271,6 +1346,7 @@ function updateAppbar(){
 function render(){
   if(screen==="bucket"){ renderTabs(); renderMain(); if(view==="karte"&&map) renderMap(); }
   if(screen==="home") renderHome();
+  if(screen==="profile") renderProfile();
   updateAppbar();
 }
 
