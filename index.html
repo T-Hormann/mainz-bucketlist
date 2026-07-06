@@ -425,7 +425,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.27";
+const APP_VERSION="2.28";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1335,7 +1335,7 @@ function korkenRoulette(){
 }
 
 // ======== Kasse (Splitwise) ========
-let kasseRef=null, kasse={};
+let kasseRef=null, kasse={}, editKasseId=null;
 function subscribeKasse(db){
   kasseRef=db.ref("groups/"+dbPath+"/kasse");
   kasseRef.on("value", async snap=>{
@@ -1393,28 +1393,32 @@ function renderKasse(){
   h+=`<div class="hcard"><h3>🧾 Verlauf</h3>`;
   if(entries.length){
     entries.forEach(e=>{
-      const del = e.by===profile ? `<button class="kdel" data-del="${e.id}">✕</button>` : "";
-      if(e.type==="expense"){ const np=(e.parts||[]).length; h+=`<div class="kent"><div class="kent-b"><span class="kent-t">${esc(e.desc||"Ausgabe")}</span><span class="kent-s">${esc(e.payer||"?")} hat gezahlt · geteilt durch ${np}</span></div><span class="amt">${eur(e.amount)}</span>${del}</div>`; }
-      else { h+=`<div class="kent"><div class="kent-b"><span class="kent-t">Ausgleich: ${esc(e.from||"?")} → ${esc(e.to||"?")}</span><span class="kent-s">Rückzahlung</span></div><span class="amt">${eur(e.amount)}</span>${del}</div>`; }
+      const acts = e.by===profile ? `<button class="kdel" data-edit="${e.id}" title="Bearbeiten">✎</button><button class="kdel" data-del="${e.id}" title="Löschen">✕</button>` : "";
+      if(e.type==="expense"){ const np=(e.parts||[]).length; h+=`<div class="kent"><div class="kent-b"><span class="kent-t">${esc(e.desc||"Ausgabe")}</span><span class="kent-s">${esc(e.payer||"?")} hat gezahlt · geteilt durch ${np}</span></div><span class="amt">${eur(e.amount)}</span>${acts}</div>`; }
+      else { h+=`<div class="kent"><div class="kent-b"><span class="kent-t">Ausgleich: ${esc(e.from||"?")} → ${esc(e.to||"?")}</span><span class="kent-s">Rückzahlung</span></div><span class="amt">${eur(e.amount)}</span>${acts}</div>`; }
     });
   } else h+=`<div class="pnone">Noch keine Einträge.</div>`;
   h+=`</div>`;
   el.innerHTML=h;
   document.getElementById("kback").onclick=()=>setScreen("home");
-  document.getElementById("kexp").onclick=openExpenseForm;
-  document.getElementById("ksettle").onclick=openSettleForm;
+  document.getElementById("kexp").onclick=()=>openExpenseForm();
+  document.getElementById("ksettle").onclick=()=>openSettleForm();
   el.querySelectorAll(".kdel[data-del]").forEach(b=>b.onclick=()=>deleteKasseEntry(b.dataset.del));
+  el.querySelectorAll(".kdel[data-edit]").forEach(b=>b.onclick=()=>{ const e=kasse[b.dataset.edit]; if(!e)return; if(e.type==="settle") openSettleForm(b.dataset.edit); else openExpenseForm(b.dataset.edit); });
 }
-function openExpenseForm(){
+function openExpenseForm(id){
+  editKasseId = id||null;
+  const ex = (id&&kasse[id]&&kasse[id].type==="expense") ? kasse[id] : null;
   const ov=document.getElementById("kasseov");
-  const payerOpts=MEMBERS.map(n=>`<option value="${n}" ${n===profile?"selected":""}>${n}</option>`).join("");
-  const partChecks=MEMBERS.map(n=>`<label class="kcheck"><input type="checkbox" value="${n}" checked> ${n}</label>`).join("");
+  const payerSel = ex?ex.payer:profile;
+  const payerOpts=MEMBERS.map(n=>`<option value="${n}" ${n===payerSel?"selected":""}>${n}</option>`).join("");
+  const partChecks=MEMBERS.map(n=>{ const chk = ex ? (ex.parts||[]).includes(n) : true; return `<label class="kcheck"><input type="checkbox" value="${n}" ${chk?"checked":""}> ${n}</label>`; }).join("");
   ov.innerHTML=`<div class="spotcard">
-    <div class="spot-h"><h2>Ausgabe eintragen</h2><button class="spot-x" id="kx">✕</button></div>
+    <div class="spot-h"><h2>${ex?"Ausgabe bearbeiten":"Ausgabe eintragen"}</h2><button class="spot-x" id="kx">✕</button></div>
     <label class="fl">Wofür?</label>
-    <input class="finp" id="k-desc" placeholder="z. B. Weinprobe, Pizza, Benzin">
+    <input class="finp" id="k-desc" placeholder="z. B. Weinprobe, Pizza, Benzin" value="${ex?esc(ex.desc||""):""}">
     <label class="fl">Betrag (€)</label>
-    <input class="finp" id="k-amount" inputmode="decimal" placeholder="0,00">
+    <input class="finp" id="k-amount" inputmode="decimal" placeholder="0,00" value="${ex?String(ex.amount).replace(".",","):""}">
     <label class="fl">Wer hat gezahlt?</label>
     <select class="finp" id="k-payer">${payerOpts}</select>
     <label class="fl">Geteilt unter (Anteil zu gleichen Teilen)</label>
@@ -1434,21 +1438,25 @@ async function submitExpense(){
   const hint=document.getElementById("k-hint");
   if(!amount||amount<=0){ hint.textContent="Bitte einen gültigen Betrag eingeben."; return; }
   if(!parts.length){ hint.textContent="Mindestens eine Person auswählen."; return; }
-  await saveKasseEntry({type:"expense", desc:desc||"Ausgabe", amount:Math.round(amount*100)/100, payer, parts});
+  await saveKasseEntry({type:"expense", desc:desc||"Ausgabe", amount:Math.round(amount*100)/100, payer, parts}, editKasseId);
   closeKasseForm();
 }
-function openSettleForm(){
+function openSettleForm(id){
+  editKasseId = id||null;
+  const ex = (id&&kasse[id]&&kasse[id].type==="settle") ? kasse[id] : null;
+  const fromSel = ex?ex.from:profile;
+  const toSel = ex?ex.to:MEMBERS.find(n=>n!==fromSel);
+  const fromOpts=MEMBERS.map(n=>`<option value="${n}" ${n===fromSel?"selected":""}>${n}</option>`).join("");
+  const toOpts=MEMBERS.map(n=>`<option value="${n}" ${n===toSel?"selected":""}>${n}</option>`).join("");
   const ov=document.getElementById("kasseov");
-  const fromOpts=MEMBERS.map(n=>`<option value="${n}" ${n===profile?"selected":""}>${n}</option>`).join("");
-  const toOpts=MEMBERS.map((n,i)=>`<option value="${n}" ${i===1?"selected":""}>${n}</option>`).join("");
   ov.innerHTML=`<div class="spotcard">
-    <div class="spot-h"><h2>Ausgleich buchen</h2><button class="spot-x" id="kx">✕</button></div>
+    <div class="spot-h"><h2>${ex?"Ausgleich bearbeiten":"Ausgleich buchen"}</h2><button class="spot-x" id="kx">✕</button></div>
     <label class="fl">Wer zahlt zurück?</label>
     <select class="finp" id="s-from">${fromOpts}</select>
     <label class="fl">An wen?</label>
     <select class="finp" id="s-to">${toOpts}</select>
     <label class="fl">Betrag (€)</label>
-    <input class="finp" id="s-amount" inputmode="decimal" placeholder="0,00">
+    <input class="finp" id="s-amount" inputmode="decimal" placeholder="0,00" value="${ex?String(ex.amount).replace(".",","):""}">
     <p class="spot-hint" id="s-hint"></p>
     <div class="spot-actions"><button class="btn check-btn done" id="s-save">Speichern</button></div>
   </div>`;
@@ -1463,14 +1471,15 @@ async function submitSettle(){
   const hint=document.getElementById("s-hint");
   if(from===to){ hint.textContent="Bitte zwei verschiedene Personen wählen."; return; }
   if(!amount||amount<=0){ hint.textContent="Bitte einen gültigen Betrag eingeben."; return; }
-  await saveKasseEntry({type:"settle", from, to, amount:Math.round(amount*100)/100});
+  await saveKasseEntry({type:"settle", from, to, amount:Math.round(amount*100)/100}, editKasseId);
   closeKasseForm();
 }
-function closeKasseForm(){ const ov=document.getElementById("kasseov"); ov.classList.remove("show"); ov.innerHTML=""; }
-async function saveKasseEntry(entry){
+function closeKasseForm(){ editKasseId=null; const ov=document.getElementById("kasseov"); ov.classList.remove("show"); ov.innerHTML=""; }
+async function saveKasseEntry(entry, editId){
   if(!kasseRef||!cryptoKey){ alert("Keine Verbindung – Eintrag kann gerade nicht gespeichert werden."); return; }
-  const id="k"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  const rec={...entry, by:profile, ts:Date.now()};
+  const existing = editId?kasse[editId]:null;
+  const id = editId || ("k"+Date.now().toString(36)+Math.random().toString(36).slice(2,5));
+  const rec={...entry, by: existing?existing.by:profile, ts: existing?existing.ts:Date.now()};
   kasse[id]={id,...rec}; if(screen==="kasse")renderKasse();
   try{ await kasseRef.child(id).set(await encryptObj(cryptoKey,rec)); }catch(e){}
 }
