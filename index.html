@@ -326,6 +326,13 @@ textarea.finp{resize:vertical}
 .vote-s{flex:0 0 auto;font-size:12px;color:var(--muted);font-weight:600}
 .vote-s.need{color:var(--bordeaux)}
 .vote-more{font-size:12px;color:var(--muted);margin-top:8px}
+.triprow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+.triprow:last-child{border-bottom:0}
+.trip-b{display:flex;flex-direction:column;gap:1px;min-width:0}
+.trip-t{font-size:14.5px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip-w{font-size:12.5px;color:var(--muted)}
+.trip-w.now{color:var(--green);font-weight:600}
+.trip-w.plan{color:var(--bordeaux)}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -431,7 +438,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.29";
+const APP_VERSION="2.30";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1210,11 +1217,33 @@ function handleTripAction(id,act,oid){
   if(act==="addtask"){ const tx=(document.getElementById("nk-text").value||"").trim(); if(tx)addTask(id,tx); return; }
   if(act==="additin"){ const day=document.getElementById("ni-day").value, tx=(document.getElementById("ni-text").value||"").trim(); if(tx)addItin(id,day,tx); return; }
 }
-function nextTripCard(){
-  const nt=nextTrip();
-  if(!nt){ const any=Object.keys(trips).length; return `<div class="hcard soon"><h3>🧭 Nächster Trip <span class="badge-soon">${any?'Abstimmung läuft':'bald'}</span></h3><div class="ttl">${any?'Noch kein Termin fixiert':'Noch kein Trip geplant'}</div><p>${any?'In den Trips läuft eine Abstimmung – stimm mit ab!':'Schlag im Trips-Tab den ersten Ausflug vor.'}</p><button class="kbtn" id="trbtn" style="margin-top:11px">Zu den Trips</button></div>`; }
-  const ps=tParts(nt.t); const stay=nt.t.fixedStay?((nt.t.stays||[]).find(s=>s.id===nt.t.fixedStay)||{}).label:"";
-  return `<div class="hcard evhome"><h3>🧭 Nächster Trip</h3><div class="ttl">${nt.t.title}</div><div class="ev-meta">${rangeFmt(nt.fd)}${stay?' · '+stay:''}</div><div class="who" style="margin-top:8px">${ps.map(avatar).join("")}</div><button class="kbtn" id="trbtn" style="margin-top:11px">Zum Trip</button></div>`;
+function upcomingTrips(){
+  const cut=new Date(); cut.setHours(0,0,0,0); const cutMs=cut.getTime();
+  const arr=[];
+  Object.keys(trips).forEach(id=>{
+    const t=trips[id]; const fd=fixedDateObj(t);
+    if(fd){
+      const endMs=new Date((fd.end||fd.start)+"T12:00").getTime();
+      if(endMs>=cutMs){ const startMs=new Date(fd.start+"T12:00").getTime(); arr.push({id,t,fd,start:fd.start,planning:false,running:startMs<=cutMs}); }
+    } else {
+      arr.push({id,t,fd:null,start:(t.dates&&t.dates[0]&&t.dates[0].start)||"9999-99-99",planning:true,running:false});
+    }
+  });
+  arr.sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+  return arr;
+}
+function upcomingTripsCard(){
+  const list=upcomingTrips();
+  if(!list.length){ const any=Object.keys(trips).length; return `<div class="hcard soon"><h3>🧭 Kommende Trips <span class="badge-soon">${any?'nichts Anstehendes':'bald'}</span></h3><div class="ttl">${any?'Keine anstehenden Trips':'Noch kein Trip geplant'}</div><p>${any?'Alle Termine liegen in der Vergangenheit.':'Schlag im Trips-Tab den ersten Ausflug vor.'}</p><button class="kbtn" id="trbtn" style="margin-top:11px">Zu den Trips</button></div>`; }
+  const rows=list.map(x=>{
+    const ps=tParts(x.t);
+    let when, cls;
+    if(x.planning){ when=`Termin offen · ${(x.t.dates||[]).length} Vorschläge`; cls="plan"; }
+    else if(x.running){ when=`läuft gerade · ${rangeFmt(x.fd)}`; cls="now"; }
+    else { when=rangeFmt(x.fd); cls="fix"; }
+    return `<div class="triprow" data-tid="${x.id}"><div class="trip-b"><span class="trip-t">${esc(x.t.title||'Trip')}</span><span class="trip-w ${cls}">${when}</span></div><span class="who-mini">${ps.map(avatar).join("")}</span></div>`;
+  }).join("");
+  return `<div class="hcard"><h3>🧭 Kommende Trips</h3>${rows}</div>`;
 }
 (function(){ const b=document.getElementById("newtripbtn"); if(b) b.onclick=openTripForm; })();
 // ======== Events ========
@@ -1282,7 +1311,7 @@ function renderHome(){
       <div class="cta-sub">Würfelt einen offenen Ort für heute</div>`;
 
   // 3) Nächster Trip
-  h+=nextTripCard();
+  h+=upcomingTripsCard();
 
   // 4) Ranking (funktional)
   h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
@@ -1317,6 +1346,7 @@ function renderHome(){
   el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
   const ko=document.getElementById("kasseopen"); if(ko) ko.onclick=()=>setScreen("kasse");
   el.querySelectorAll(".voterow[data-tid]").forEach(r=>r.onclick=()=>{ setScreen("trips"); openTrip(r.dataset.tid); });
+  el.querySelectorAll(".triprow[data-tid]").forEach(r=>r.onclick=()=>{ setScreen("trips"); openTrip(r.dataset.tid); });
 }
 let profileView=null;
 function openProfile(name){ profileView=name; setScreen("profile"); }
