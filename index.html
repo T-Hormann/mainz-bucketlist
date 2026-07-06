@@ -296,6 +296,17 @@ textarea.finp{resize:vertical}
 .spotmap{height:200px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-top:2px}
 .spot-hint{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:16px}
 .spot-actions{margin-top:10px}
+.commentbox{margin-top:16px;border-top:1px solid var(--line2);padding-top:12px}
+.commentbox h3{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.cmt{display:flex;gap:9px;align-items:flex-start;padding:6px 0}
+.cmt .cbody{display:flex;flex-direction:column;gap:1px;min-width:0}
+.cmt .cnm{font-size:12px;color:var(--muted);font-weight:600}
+.cmt .ctxt{font-size:14.5px;color:var(--text);word-break:break-word}
+.cinput-wrap{display:flex;gap:8px;margin-top:10px}
+.cinput{flex:1;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:15px;font-family:inherit;color:var(--text);background:var(--bg);box-sizing:border-box;min-width:0}
+.cbtn{flex:0 0 auto;border:0;border-radius:11px;padding:10px 16px;font-size:14px;font-weight:700;background:var(--bordeaux);color:#fff;cursor:pointer}
+.cbtn:disabled{opacity:.6}
+.ccount{text-align:right;font-size:11px;color:var(--muted);margin-top:4px}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -399,7 +410,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.24";
+const APP_VERSION="2.25";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -828,6 +839,7 @@ function initFirebase(){
   subscribeTrips(db);
   subscribeSpots(db);
   subscribeChat(db);
+  subscribeComments(db);
 }
 let pushT=null;
 function pushMine(){
@@ -1409,6 +1421,7 @@ function openSheet(id){
       src="https://maps.google.com/maps?q=${q}&z=15&output=embed"></iframe>
     <div class="rating" id="rating"></div>
     <div class="peoplebox" id="peoplebox"></div>
+    <div class="commentbox" id="commentbox"></div>
     <div class="btn-row">
       <button class="btn check-btn" id="sheetcheck"></button>
       <a class="btn maps" target="_blank" rel="noopener"
@@ -1418,6 +1431,7 @@ function openSheet(id){
   updateSheetBtn(id);
   renderRating(id);
   renderPeople(id);
+  renderComments(id);
   document.getElementById("sheetcheck").onclick=()=>toggle(id);
   if(isCustom && d.by===profile){
     const e=document.getElementById("sheetedit"); if(e) e.onclick=()=>{ closeSheet(); openSpotForm(id); };
@@ -1557,6 +1571,52 @@ async function submitSpot(){
   const id=await saveSpot({ id:editSpotId, name, cat, desc, lat:spotPos[0], lng:spotPos[1], by:ex?ex.by:profile, ts:ex?ex.ts:Date.now() });
   closeSpotForm();
   if(id){ setScreen("bucket"); activeCat="alle"; renderTabs(); renderMain(); if(view==="karte")renderMap(); setTimeout(()=>openSheet(id),180); }
+}
+
+// ======== Kommentare (einer pro Person & Spot, max. 60 Zeichen) ========
+let commentsRef=null, comments={};
+function subscribeComments(db){
+  commentsRef=db.ref("groups/"+dbPath+"/comments");
+  commentsRef.on("value", async snap=>{
+    const v=snap.val()||{}; const nx={};
+    for(const sid in v){ nx[sid]={}; for(const usr in v[sid]){ const d=await decryptObj(cryptoKey,v[sid][usr]); if(d&&d.text) nx[sid][usr]={text:d.text,ts:d.ts||0}; } }
+    comments=nx;
+    const sheet=document.getElementById("sheet");
+    if(sheet.classList.contains("open")&&sheet.dataset.id){ const inp=document.getElementById("cinput"); if(!inp||document.activeElement!==inp) renderComments(sheet.dataset.id); }
+  }, err=>{});
+}
+async function saveComment(spotId,text){
+  if(!commentsRef||!cryptoKey){ alert("Keine Verbindung – Kommentar kann gerade nicht gespeichert werden."); return; }
+  const t=(text||"").trim().slice(0,60);
+  if(!comments[spotId]) comments[spotId]={};
+  if(!t){
+    delete comments[spotId][profile];
+    try{ await commentsRef.child(spotId).child(profile).remove(); }catch(e){}
+    return;
+  }
+  const rec={text:t, ts:Date.now()};
+  comments[spotId][profile]=rec;
+  try{ await commentsRef.child(spotId).child(profile).set(await encryptObj(cryptoKey,rec)); }catch(e){}
+}
+function renderComments(spotId){
+  const el=document.getElementById("commentbox"); if(!el)return;
+  const cs=comments[spotId]||{};
+  const mine=cs[profile]?cs[profile].text:"";
+  const all=MEMBERS.filter(n=>cs[n]&&cs[n].text).sort((a,b)=>(cs[a].ts||0)-(cs[b].ts||0));
+  let h=`<h3>Kommentare</h3>`;
+  if(all.length){
+    all.forEach(n=>{ h+=`<div class="cmt">${avatar(n)}<div class="cbody"><span class="cnm">${n}${n===profile?" (du)":""}</span><span class="ctxt">${esc(cs[n].text)}</span></div></div>`; });
+  } else {
+    h+=`<div class="pnone">Noch keine Kommentare. Sag den anderen, was du denkst!</div>`;
+  }
+  h+=`<div class="cinput-wrap"><input class="cinput" id="cinput" maxlength="60" placeholder="Dein Kommentar (max. 60 Zeichen)" value="${esc(mine)}"><button class="cbtn" id="csave">${mine?"Ändern":"Senden"}</button></div><div class="ccount" id="ccount"></div>`;
+  el.innerHTML=h;
+  const inp=document.getElementById("cinput"), cnt=document.getElementById("ccount"), btn=document.getElementById("csave");
+  const upd=()=>{ cnt.textContent=inp.value.length+"/60"; };
+  upd(); inp.oninput=upd;
+  const doSave=async()=>{ btn.disabled=true; await saveComment(spotId, inp.value); renderComments(spotId); };
+  btn.onclick=doSave;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); doSave(); } };
 }
 
 // ======== Karte ========
