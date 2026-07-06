@@ -320,6 +320,12 @@ textarea.finp{resize:vertical}
 .kchecks{display:flex;flex-wrap:wrap;gap:9px}
 .kcheck{display:flex;align-items:center;gap:6px;font-size:14.5px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
 .kcheck input{width:16px;height:16px}
+.voterow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+.voterow:last-child{border-bottom:0}
+.vote-t{font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vote-s{flex:0 0 auto;font-size:12px;color:var(--muted);font-weight:600}
+.vote-s.need{color:var(--bordeaux)}
+.vote-more{font-size:12px;color:var(--muted);margin-top:8px}
 /* Overlay */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center}
 .overlay.show{display:flex}
@@ -425,7 +431,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.28";
+const APP_VERSION="2.29";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1057,6 +1063,25 @@ function nextTrip(){
   const arr=Object.keys(trips).map(id=>{const t=trips[id];const fd=fixedDateObj(t);return fd?{id,t,start:fd.start,fd}:null;}).filter(x=>x&&new Date(x.start+"T12:00").getTime()>=cutMs).sort((a,b)=>a.start.localeCompare(b.start));
   return arr[0]||null;
 }
+function openVotes(){
+  const out=[];
+  Object.keys(trips).forEach(tid=>{
+    const t=trips[tid]; if(!t) return;
+    const ps=tParts(t); if(!ps.includes(profile)) return;
+    const multi=isMulti(t);
+    const cats=[];
+    if(!t.fixedDate && (t.dates||[]).length>0) cats.push({kind:"dates",label:"Termin",icon:"📅"});
+    if(multi && !t.fixedStay && (t.stays||[]).length>0) cats.push({kind:"stays",label:"Unterkunft",icon:"🏠"});
+    if(multi && !t.fixedTransport && (t.transport||[]).length>0) cats.push({kind:"transport",label:"Anreise",icon:"🚆"});
+    cats.forEach(c=>{
+      const mineVoted = Object.values((myV(tid)[c.kind])||{}).some(Boolean);
+      const voted = ps.filter(n=>{ const v=tripVotes[tid]&&tripVotes[tid][n]; return v&&v[c.kind]&&Object.values(v[c.kind]).some(Boolean); }).length;
+      out.push({tid, title:t.title||"Trip", kind:c.kind, label:c.label, icon:c.icon, mineVoted, voted, total:ps.length});
+    });
+  });
+  out.sort((a,b)=>(a.mineVoted?1:0)-(b.mineVoted?1:0));
+  return out;
+}
 function pad2(n){return String(n).padStart(2,"0");}
 function dStamp(s){const d=new Date(s+"T00:00");return d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate());}
 function tripICS(t){
@@ -1273,10 +1298,15 @@ function renderHome(){
   else { const st = myBal>0.005?`Du bekommst <b class="amt plus">${eur(myBal)}</b>`:(myBal<-0.005?`Du schuldest <b class="amt minus">${eur(-myBal)}</b>`:`Du bist ausgeglichen ✓`); kLine=`<div class="ttl">${st}</div><p>${anyK} Eintrag${anyK>1?"e":""} · tippe für Details.</p>`; }
   h+=`<div class="hcard"><h3>💶 Gemeinsame Kasse</h3>${kLine}<button class="kbtn" id="kasseopen" style="margin-top:11px">Kasse öffnen</button></div>`;
 
-  // 6) Abstimmungen
-  h+=`<div class="hcard soon"><h3>🗳️ Abstimmungen <span class="badge-soon">bald</span></h3>
-      <div class="ttl">Gemeinsam entscheiden</div>
-      <p>Hier kommen eure Gruppen-Abstimmungen rein – „Wohin als Nächstes?", „Welches Weingut?" – jede:r stimmt ab, die App zählt aus.</p></div>`;
+  // 6) Abstimmungen (offene Trip-Entscheidungen)
+  const ov=openVotes(); const missing=ov.filter(x=>!x.mineVoted).length;
+  let vLine;
+  if(!ov.length){ vLine=`<div class="ttl">Keine offenen Abstimmungen</div><p>Sobald ein Trip geplant wird, tauchen Termin-, Unterkunfts- und Anreise-Abstimmungen automatisch hier auf.</p>`; }
+  else {
+    vLine=ov.slice(0,5).map(x=>`<div class="voterow" data-tid="${x.tid}"><span class="vote-t">${x.icon} ${esc(x.title)} · ${x.label}</span><span class="vote-s ${x.mineVoted?"":"need"}">${x.mineVoted?`${x.voted}/${x.total} ✓`:"deine Stimme fehlt"}</span></div>`).join("");
+    if(ov.length>5) vLine+=`<div class="vote-more">+${ov.length-5} weitere</div>`;
+  }
+  h+=`<div class="hcard"><h3>🗳️ Offene Abstimmungen${missing?` <span class="badge-soon">${missing} offen</span>`:""}</h3>${vLine}</div>`;
 
   h+=`<div class="ver">Agraffen-App · v${APP_VERSION}</div>`;
   el.innerHTML=h;
@@ -1286,6 +1316,7 @@ function renderHome(){
   const pb=document.getElementById("profbtn"); if(pb) pb.onclick=()=>openProfile(profile);
   el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
   const ko=document.getElementById("kasseopen"); if(ko) ko.onclick=()=>setScreen("kasse");
+  el.querySelectorAll(".voterow[data-tid]").forEach(r=>r.onclick=()=>{ setScreen("trips"); openTrip(r.dataset.tid); });
 }
 let profileView=null;
 function openProfile(name){ profileView=name; setScreen("profile"); }
