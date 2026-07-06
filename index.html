@@ -438,7 +438,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.30";
+const APP_VERSION="2.31";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1277,7 +1277,7 @@ function renderEvents(){
       ${e.cat?`<span class="ev-cat">${e.cat}</span>`:""}
       <div class="chev">›</div></a>`;
   });
-  wrap.innerHTML=h+`<div class="ev-src">Quelle: meinestadt.de${eventsUpdated?" · Stand "+eventsUpdated:""}</div>`;
+  wrap.innerHTML=h+`<div class="ev-src">Feste &amp; Winzer-Events${eventsUpdated?" · Stand "+eventsUpdated:""}</div>`;
 }
 function eventOfWeek(){
   const up=upcomingEvents(); if(!up.length) return null;
