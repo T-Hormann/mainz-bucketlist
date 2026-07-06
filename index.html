@@ -438,7 +438,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.32";
+const APP_VERSION="2.33";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1293,9 +1293,10 @@ function subscribeEventsRsvp(db){
     for(const eid in val){
       const node=val[eid]||{};
       const info=node.info?await decryptObj(cryptoKey,node.info):null;
+      const asked=node.asked?await decryptObj(cryptoKey,node.asked):null;
       const votes={};
-      if(node.v){ for(const nm in node.v){ const d=await decryptObj(cryptoKey,node.v[nm]); if(d&&d.in) votes[nm]=true; } }
-      nx[eid]={info, votes};
+      if(node.v){ for(const nm in node.v){ const d=await decryptObj(cryptoKey,node.v[nm]); if(d) votes[nm]=(d.in===true); } }
+      nx[eid]={info, asked, votes};
     }
     eventRsvp=nx;
     if(screen==="home") renderHome();
@@ -1304,26 +1305,48 @@ function subscribeEventsRsvp(db){
     if(sh.classList.contains("open") && (sh.dataset.id||"").startsWith("ev:")){ const inf=(eventRsvp[sh.dataset.id.slice(3)]||{}).info; if(inf) openEventSheet(inf); }
   }, err=>{});
 }
-async function toggleEventRsvp(ev){
-  if(!eventsRsvpRef||!cryptoKey){ alert("Keine Verbindung – bitte kurz später erneut."); return; }
-  const eid=evId(ev);
-  const mine=!!(eventRsvp[eid]&&eventRsvp[eid].votes&&eventRsvp[eid].votes[profile]);
-  if(!eventRsvp[eid]) eventRsvp[eid]={info:null,votes:{}};
+async function ensureEventInfo(eid, ev){
+  if(!eventRsvp[eid]) eventRsvp[eid]={info:null,asked:null,votes:{}};
   if(!eventRsvp[eid].info){
     eventRsvp[eid].info={name:ev.name,start:ev.start,venue:ev.venue||"",city:ev.city||"",cat:ev.cat||"",by:profile,ts:Date.now()};
     try{ await eventsRsvpRef.child(eid).child("info").set(await encryptObj(cryptoKey,eventRsvp[eid].info)); }catch(e){}
   }
-  eventRsvp[eid].votes[profile]=!mine;
-  try{ await eventsRsvpRef.child(eid).child("v").child(profile).set(await encryptObj(cryptoKey,{in:!mine,ts:Date.now()})); }catch(e){}
+}
+async function setEventVote(ev, val){
+  if(!eventsRsvpRef||!cryptoKey){ alert("Keine Verbindung – bitte kurz später erneut."); return; }
+  const eid=evId(ev);
+  await ensureEventInfo(eid, ev);
+  const cur = (profile in eventRsvp[eid].votes) ? eventRsvp[eid].votes[profile] : null;
+  if(cur===val){
+    delete eventRsvp[eid].votes[profile];
+    try{ await eventsRsvpRef.child(eid).child("v").child(profile).remove(); }catch(e){}
+  } else {
+    eventRsvp[eid].votes[profile]=val;
+    try{ await eventsRsvpRef.child(eid).child("v").child(profile).set(await encryptObj(cryptoKey,{in:val,ts:Date.now()})); }catch(e){}
+  }
   openEventSheet(eventRsvp[eid].info||ev);
   if(screen==="home") renderHome(); if(screen==="events") renderEvents();
 }
+async function askEvent(ev){
+  if(!eventsRsvpRef||!cryptoKey){ alert("Keine Verbindung – bitte kurz später erneut."); return; }
+  const eid=evId(ev);
+  await ensureEventInfo(eid, ev);
+  eventRsvp[eid].asked={by:profile, ts:Date.now()};
+  try{ await eventsRsvpRef.child(eid).child("asked").set(await encryptObj(cryptoKey,eventRsvp[eid].asked)); }catch(e){}
+  openEventSheet(eventRsvp[eid].info||ev);
+  if(screen==="home") renderHome();
+}
 function openEventSheet(ev){
   const eid=evId(ev);
-  const r=eventRsvp[eid]||{}; const votes=r.votes||{};
-  const inMembers=MEMBERS.filter(n=>votes[n]); const meIn=!!votes[profile];
+  const r=eventRsvp[eid]||{}; const votes=r.votes||{}; const asked=r.asked;
+  const yesMembers=MEMBERS.filter(n=>votes[n]===true);
+  const noMembers=MEMBERS.filter(n=>votes[n]===false);
+  const myVote=(profile in votes)?votes[profile]:null;
   const q=encodeURIComponent((ev.name||"")+" "+(ev.venue||"")+" "+(ev.city||""));
   const sheet=document.getElementById("sheet"); sheet.dataset.id="ev:"+eid;
+  const askBlock = asked
+    ? `<p style="font-size:12.5px;color:var(--bordeaux);font-weight:600;margin-top:10px">🔔 Nachfrage von ${esc(asked.by||"?")}: Kommst du mit?</p>`
+    : `<button class="btn check-btn" id="evask" style="margin-top:10px">🔔 Nachfrage an die Gruppe</button><p style="font-size:12px;color:var(--muted);margin-top:6px">Fragt die anderen, ob sie mitkommen – erscheint bei ihnen als Abstimmung auf der Startseite.</p>`;
   sheet.innerHTML=`
     <div class="grip"></div>
     <span class="badge">📅 ${esc(ev.cat||"Event")}</span>
@@ -1332,14 +1355,20 @@ function openEventSheet(ev){
     ${(ev.venue||ev.city)?`<p class="addr">📍 ${esc([ev.venue,ev.city].filter(Boolean).join(", "))}</p>`:""}
     <div class="commentbox">
       <h3>Wer kommt mit?</h3>
-      <div class="who" style="margin-bottom:8px">${inMembers.length?inMembers.map(avatar).join("")+`<span style="margin-left:12px;font-size:13.5px;color:var(--muted)">${inMembers.join(", ")}</span>`:'<span class="pnone">Noch niemand zugesagt – frag die Gruppe!</span>'}</div>
-      <button class="btn check-btn ${meIn?"done":""}" id="evrsvp">${meIn?"✓ Ich komme mit":"Ich komme mit"}</button>
-      <p style="font-size:12px;color:var(--muted);margin-top:8px">Deine Zusage erscheint für alle auf der Startseite unter „Kommende Events".</p>
+      <div class="who" style="margin-bottom:4px">${yesMembers.length?yesMembers.map(avatar).join("")+`<span style="margin-left:12px;font-size:13.5px;color:var(--muted)">${yesMembers.join(", ")}</span>`:'<span class="pnone">Noch keine Zusage.</span>'}</div>
+      ${noMembers.length?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Kann nicht: ${noMembers.join(", ")}</div>`:""}
+      <div class="kbtns" style="margin:8px 0 0">
+        <button class="btn check-btn ${myVote===true?"done":""}" id="evyes">${myVote===true?"✓ Ich komme mit":"Ich komme mit"}</button>
+        <button class="btn ${myVote===false?"danger":"check-btn"}" id="evno">${myVote===false?"✕ Kann nicht":"Kann nicht"}</button>
+      </div>
+      ${askBlock}
     </div>
     <div class="btn-row">
       <a class="btn maps" target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}">Mehr Infos</a>
     </div>`;
-  document.getElementById("evrsvp").onclick=()=>toggleEventRsvp(ev);
+  document.getElementById("evyes").onclick=()=>setEventVote(ev,true);
+  document.getElementById("evno").onclick=()=>setEventVote(ev,false);
+  const ab=document.getElementById("evask"); if(ab) ab.onclick=()=>askEvent(ev);
   document.getElementById("backdrop").classList.add("open");
   sheet.classList.add("open");
 }
@@ -1348,9 +1377,21 @@ function proposedEvents(){
   const arr=[];
   for(const eid in eventRsvp){
     const r=eventRsvp[eid]; if(!r||!r.info) continue;
-    const cnt=MEMBERS.filter(n=>r.votes&&r.votes[n]).length; if(cnt<1) continue;
+    const cnt=MEMBERS.filter(n=>r.votes&&r.votes[n]===true).length; if(cnt<1) continue;
     const d=new Date(r.info.start); if(isNaN(d.getTime())||d<t) continue;
     arr.push({eid, ev:r.info, count:cnt});
+  }
+  arr.sort((a,b)=>String(a.ev.start).localeCompare(String(b.ev.start)));
+  return arr;
+}
+function openNachfragen(){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const arr=[];
+  for(const eid in eventRsvp){
+    const r=eventRsvp[eid]; if(!r||!r.info||!r.asked) continue;
+    if(profile in (r.votes||{})) continue;
+    const d=new Date(r.info.start); if(isNaN(d.getTime())||d<t) continue;
+    arr.push({eid, ev:r.info, by:r.asked.by});
   }
   arr.sort((a,b)=>String(a.ev.start).localeCompare(String(b.ev.start)));
   return arr;
@@ -1385,10 +1426,17 @@ function renderHome(){
   // 1) Event der Woche
   h+=eventOfWeekCard();
 
-  // 1b) Kommende Events (angefragt)
+  // 1a) Offene Nachfragen (Event-Abstimmung)
+  const nf=openNachfragen();
+  if(nf.length){
+    const rows=nf.slice(0,5).map(x=>`<div class="voterow" data-evkey="${x.eid}"><span class="vote-t">🔔 ${esc(x.ev.name)} · ${fmtShort(x.ev.start)}</span><span class="vote-s need">kommst du mit?</span></div>`).join("");
+    h+=`<div class="hcard"><h3>🔔 Offene Nachfragen <span class="badge-soon">${nf.length}</span></h3>${rows}</div>`;
+  }
+
+  // 1b) Kommende Events (angefragt / zugesagt)
   const pe=proposedEvents();
   if(pe.length){
-    const rows=pe.slice(0,5).map(x=>`<div class="voterow" data-evkey="${x.eid}"><span class="vote-t">📅 ${esc(x.ev.name)} · ${fmtShort(x.ev.start)}</span><span class="vote-s ${x.count?"":"need"}">${x.count} dabei</span></div>`).join("");
+    const rows=pe.slice(0,5).map(x=>`<div class="voterow" data-evkey="${x.eid}"><span class="vote-t">📅 ${esc(x.ev.name)} · ${fmtShort(x.ev.start)}</span><span class="vote-s">${x.count} dabei</span></div>`).join("");
     h+=`<div class="hcard"><h3>📅 Kommende Events</h3>${rows}</div>`;
   }
 
