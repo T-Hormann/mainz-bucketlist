@@ -381,6 +381,7 @@ textarea.finp{resize:vertical}
 
 <section id="s-events" class="screen">
   <div class="ev-head"><h2>Events</h2><p>Mainz, Wiesbaden &amp; Rheinhessen</p></div>
+  <div style="padding:2px 14px 0"><button class="cta" id="neweventbtn" style="margin:6px 0 0;width:100%"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Eigenes Event erstellen</button></div>
   <div id="eventswrap"></div>
 </section>
 
@@ -420,6 +421,7 @@ textarea.finp{resize:vertical}
 <button id="addspot" class="fab" title="Spot hinzufügen"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 <div class="spotov" id="spotov"></div>
 <div class="spotov" id="kasseov"></div>
+<div class="spotov" id="eventov"></div>
 <div class="overlay" id="overlay"></div>
 
 <script>
@@ -438,7 +440,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.34";
+const APP_VERSION="2.35";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -870,6 +872,7 @@ function initFirebase(){
   subscribeComments(db);
   subscribeKasse(db);
   subscribeEventsRsvp(db);
+  subscribeUserEvents(db);
 }
 let pushT=null;
 function pushMine(){
@@ -1247,6 +1250,7 @@ function upcomingTripsCard(){
   return `<div class="hcard"><h3>🧭 Kommende Trips</h3>${rows}</div>`;
 }
 (function(){ const b=document.getElementById("newtripbtn"); if(b) b.onclick=openTripForm; })();
+(function(){ const b=document.getElementById("neweventbtn"); if(b) b.onclick=()=>openEventForm(); })();
 // ======== Events ========
 let EVENTS=[], eventsUpdated="";
 async function loadEvents(){
@@ -1260,7 +1264,96 @@ async function loadEvents(){
     if(screen==="home") renderHome();
   }catch(e){}
 }
-function upcomingEvents(){ const t=new Date(); t.setHours(0,0,0,0); return EVENTS.filter(e=>new Date(e.start)>=t); }
+function allEvents(){ return EVENTS.concat(Object.values(userEvents)); }
+function upcomingEvents(){ const t=new Date(); t.setHours(0,0,0,0); return allEvents().filter(e=>e&&e.start&&new Date(e.start)>=t).sort((a,b)=>a.start.localeCompare(b.start)); }
+// ======== Eigene Events ========
+let userEventsRef=null, userEvents={}, editEventId=null;
+function subscribeUserEvents(db){
+  userEventsRef=db.ref("groups/"+dbPath+"/user_events");
+  userEventsRef.on("value", async snap=>{
+    const v=snap.val()||{}; const nx={};
+    for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d){ d._uid=id; d.custom=true; nx[id]=d; } }
+    userEvents=nx;
+    if(screen==="events") renderEvents();
+    if(screen==="home") renderHome();
+    const sh=document.getElementById("sheet");
+    if(sh.classList.contains("open") && (sh.dataset.id||"").startsWith("ev:")){ const inf=evByEid(sh.dataset.id.slice(3)); if(inf) openEventSheet(inf); }
+  }, err=>{});
+}
+function evByEid(eid){
+  for(const uid in userEvents){ if(evId(userEvents[uid])===eid) return userEvents[uid]; }
+  return (eventRsvp[eid]&&eventRsvp[eid].info)||null;
+}
+async function saveUserEvent(obj, editId){
+  if(!userEventsRef||!cryptoKey){ alert("Keine Verbindung – Event kann gerade nicht gespeichert werden."); return null; }
+  const ex=editId?userEvents[editId]:null;
+  const id=editId || ("ue"+Date.now().toString(36)+Math.random().toString(36).slice(2,5));
+  const rec={ name:obj.name, start:obj.start, venue:obj.venue||"", city:obj.city||"", cat:obj.cat||"Eigenes Event", desc:obj.desc||"", by: ex?ex.by:profile, ts: ex?ex.ts:Date.now() };
+  userEvents[id]={ ...rec, _uid:id, custom:true }; if(screen==="events")renderEvents();
+  try{ await userEventsRef.child(id).set(await encryptObj(cryptoKey,rec)); }catch(e){}
+  if(!editId && eventsRsvpRef){
+    const eid=evId(rec);
+    if(!eventRsvp[eid]) eventRsvp[eid]={info:null,asked:null,votes:{}};
+    eventRsvp[eid].info={name:rec.name,start:rec.start,venue:rec.venue,city:rec.city,cat:rec.cat,by:profile,ts:Date.now()};
+    eventRsvp[eid].votes[profile]=true;
+    try{ await eventsRsvpRef.child(eid).child("info").set(await encryptObj(cryptoKey,eventRsvp[eid].info)); }catch(e){}
+    try{ await eventsRsvpRef.child(eid).child("v").child(profile).set(await encryptObj(cryptoKey,{in:true,ts:Date.now()})); }catch(e){}
+  }
+  return id;
+}
+async function deleteUserEvent(uid){
+  const ex=userEvents[uid]; if(!ex||ex.by!==profile)return;
+  if(!confirm("Dieses Event wirklich löschen?"))return;
+  try{ await userEventsRef.child(uid).remove(); }catch(e){}
+  try{ if(eventsRsvpRef) await eventsRsvpRef.child(evId(ex)).remove(); }catch(e){}
+  delete userEvents[uid]; closeSheet();
+  if(screen==="events")renderEvents(); if(screen==="home")renderHome();
+}
+function openEventForm(uid){
+  editEventId=uid||null;
+  const ex=uid?userEvents[uid]:null;
+  const ov=document.getElementById("eventov");
+  const cats=["Feier","Treffen","Essen","Ausflug","Sonstiges"];
+  const dateVal=ex&&ex.start?String(ex.start).slice(0,10):"";
+  const timeVal=ex&&ex.start?String(ex.start).slice(11,16):"18:00";
+  const catOpts=cats.map(c=>`<option ${ex&&ex.cat===c?"selected":""}>${c}</option>`).join("");
+  ov.innerHTML=`<div class="spotcard">
+    <div class="spot-h"><h2>${uid?"Event bearbeiten":"Eigenes Event"}</h2><button class="spot-x" id="evx">✕</button></div>
+    <label class="fl">Was feiert ihr / was ist los?</label>
+    <input class="finp" id="ue-name" placeholder="z. B. Toms Geburtstag" value="${ex?esc(ex.name):""}">
+    <label class="fl">Datum</label>
+    <input class="finp" id="ue-date" type="date" value="${dateVal}">
+    <label class="fl">Uhrzeit</label>
+    <input class="finp" id="ue-time" type="time" value="${timeVal}">
+    <label class="fl">Wo?</label>
+    <input class="finp" id="ue-venue" placeholder="z. B. bei mir zu Hause, Adresse …" value="${ex?esc(ex.venue||""):""}">
+    <label class="fl">Kategorie</label>
+    <select class="finp" id="ue-cat">${catOpts}</select>
+    <label class="fl">Notiz (optional)</label>
+    <textarea class="finp" id="ue-desc" rows="2" placeholder="Infos für die anderen">${ex?esc(ex.desc||""):""}</textarea>
+    <p class="spot-hint" id="ue-hint"></p>
+    <div class="spot-actions"><button class="btn check-btn done" id="ue-save">${uid?"Speichern":"Event erstellen"}</button></div>
+  </div>`;
+  ov.classList.add("show");
+  document.getElementById("evx").onclick=closeEventForm;
+  document.getElementById("ue-save").onclick=submitUserEvent;
+}
+function closeEventForm(){ editEventId=null; const ov=document.getElementById("eventov"); ov.classList.remove("show"); ov.innerHTML=""; }
+async function submitUserEvent(){
+  const name=document.getElementById("ue-name").value.trim();
+  const date=document.getElementById("ue-date").value;
+  const time=document.getElementById("ue-time").value||"18:00";
+  const venue=document.getElementById("ue-venue").value.trim();
+  const cat=document.getElementById("ue-cat").value;
+  const desc=document.getElementById("ue-desc").value.trim();
+  const hint=document.getElementById("ue-hint");
+  if(!name){ hint.textContent="Bitte einen Namen/Anlass eingeben."; return; }
+  if(!date){ hint.textContent="Bitte ein Datum wählen."; return; }
+  const start=date+"T"+time+":00";
+  const id=await saveUserEvent({name,start,venue,city:"",cat,desc}, editEventId);
+  closeEventForm();
+  if(id){ setScreen("events"); const ev=userEvents[id]; if(ev) setTimeout(()=>openEventSheet(ev),160); }
+}
 function fmtD(iso){ try{return new Date(iso).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});}catch(e){return iso;} }
 function fmtT(iso){ try{return new Date(iso).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";} }
 function evSearch(e){ return "https://www.google.com/search?q="+encodeURIComponent(e.name+" "+(e.venue||"")+" "+(e.city||"")); }
@@ -1275,7 +1368,7 @@ function renderEvents(){
     const eid=evId(e); const r=eventRsvp[eid]; const cnt=(r&&r.votes)?MEMBERS.filter(n=>r.votes[n]).length:0;
     h+=`<div class="ev-card" data-evidx="${i}">
       <div class="ev-time">${fmtT(e.start)}</div>
-      <div class="ev-body"><b>${esc(e.name)}</b><span>${[e.venue,e.city].filter(Boolean).join(" · ")}</span></div>
+      <div class="ev-body"><b>${esc(e.name)}</b><span>${[e.venue,e.city].filter(Boolean).join(" · ")}${e.custom?` · 🎉 von ${esc(e.by||"")}`:""}</span></div>
       ${cnt?`<span class="ev-cat" style="background:var(--green);color:#fff">${cnt} dabei</span>`:(e.cat?`<span class="ev-cat">${esc(e.cat)}</span>`:"")}
       <div class="chev">›</div></div>`;
   });
@@ -1302,7 +1395,7 @@ function subscribeEventsRsvp(db){
     if(screen==="home") renderHome();
     if(screen==="events") renderEvents();
     const sh=document.getElementById("sheet");
-    if(sh.classList.contains("open") && (sh.dataset.id||"").startsWith("ev:")){ const inf=(eventRsvp[sh.dataset.id.slice(3)]||{}).info; if(inf) openEventSheet(inf); }
+    if(sh.classList.contains("open") && (sh.dataset.id||"").startsWith("ev:")){ const inf=evByEid(sh.dataset.id.slice(3)); if(inf) openEventSheet(inf); }
   }, err=>{});
 }
 async function ensureEventInfo(eid, ev){
@@ -1343,6 +1436,10 @@ function openEventSheet(ev){
   const noMembers=MEMBERS.filter(n=>votes[n]===false);
   const myVote=(profile in votes)?votes[profile]:null;
   const q=encodeURIComponent((ev.name||"")+" "+(ev.venue||"")+" "+(ev.city||""));
+  const isCustom=!!ev.custom;
+  const byline = isCustom ? `<p class="addr byline">🎉 Eigenes Event von ${esc(ev.by||"?")}</p>` : "";
+  const descLine = ev.desc ? `<p class="desc">${esc(ev.desc)}</p>` : "";
+  const ownerBtns = (isCustom && ev.by===profile) ? `<div class="btn-row" style="margin-top:8px"><button class="btn check-btn" id="eveedit">✎ Bearbeiten</button><button class="btn danger" id="evedel">Löschen</button></div>` : "";
   const sheet=document.getElementById("sheet"); sheet.dataset.id="ev:"+eid;
   const askBlock = asked
     ? `<p style="font-size:12.5px;color:var(--bordeaux);font-weight:600;margin-top:10px">🔔 Nachfrage von ${esc(asked.by||"?")}: Kommst du mit?</p>`
@@ -1353,6 +1450,8 @@ function openEventSheet(ev){
     <h2>${esc(ev.name)}</h2>
     <p class="addr">📅 ${fmtD(ev.start)}${fmtT(ev.start)?" · "+fmtT(ev.start)+" Uhr":""}</p>
     ${(ev.venue||ev.city)?`<p class="addr">📍 ${esc([ev.venue,ev.city].filter(Boolean).join(", "))}</p>`:""}
+    ${byline}
+    ${descLine}
     <div class="commentbox">
       <h3>Wer kommt mit?</h3>
       <div class="who" style="margin-bottom:4px">${yesMembers.length?yesMembers.map(avatar).join("")+`<span style="margin-left:12px;font-size:13.5px;color:var(--muted)">${yesMembers.join(", ")}</span>`:'<span class="pnone">Noch keine Zusage.</span>'}</div>
@@ -1365,10 +1464,12 @@ function openEventSheet(ev){
     </div>
     <div class="btn-row">
       <a class="btn maps" target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}">Mehr Infos</a>
-    </div>`;
+    </div>
+    ${ownerBtns}`;
   document.getElementById("evyes").onclick=()=>setEventVote(ev,true);
   document.getElementById("evno").onclick=()=>setEventVote(ev,false);
   const ab=document.getElementById("evask"); if(ab) ab.onclick=()=>askEvent(ev);
+  if(isCustom && ev.by===profile){ const e2=document.getElementById("eveedit"); if(e2) e2.onclick=()=>{ closeSheet(); openEventForm(ev._uid); }; const d2=document.getElementById("evedel"); if(d2) d2.onclick=()=>deleteUserEvent(ev._uid); }
   document.getElementById("backdrop").classList.add("open");
   sheet.classList.add("open");
 }
