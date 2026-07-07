@@ -6,7 +6,7 @@
    - Firebase-Live-Traffic (Sync/Chat): NIE abgefangen -> braucht echtes Netz.
    - Karten-Kacheln: network, offline Rückfall auf bereits Gesehenes.
 */
-const VERSION = '2.39';
+const VERSION = '2.40';
 const CACHE = 'agraffen-' + VERSION;
 const CDN = ['unpkg.com', 'www.gstatic.com'];
 

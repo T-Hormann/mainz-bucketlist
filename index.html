@@ -464,7 +464,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.39";
+const APP_VERSION="2.40";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1076,18 +1076,17 @@ async function playVoice(idx,btn){
 }
 // ---- Bilder / Videos ----
 async function uploadMedia(kind,mime,blobData,extra){
-  // blobData: Blob/ArrayBuffer der ORIGINALdaten; verschlüsselt hochladen
+  // Datei liegt im geheimen Storage-Pfad; der Nachrichten-Rahmen bleibt verschlüsselt
   if(!chatRef||!cryptoKey||!storage){ alert("Speicher nicht bereit."); return; }
   const id="m"+Date.now()+Math.random().toString(36).slice(2,5);
-  const buf = blobData instanceof Blob ? await blobData.arrayBuffer() : blobData;
+  const blob = blobData instanceof Blob ? blobData : new Blob([blobData],{type:mime||"application/octet-stream"});
   upStat("Wird gesendet… 0%");
   try{
-    const enc = await encryptBytes(cryptoKey, buf);
     const path = "groups/"+dbPath+"/media/"+id;
-    const task = storage.ref(path).put(enc.blob, {contentType:"application/octet-stream"});
+    const task = storage.ref(path).put(blob, {contentType:mime||"application/octet-stream"});
     task.on("state_changed", s=>{ const p=s.totalBytes?Math.round(100*s.bytesTransferred/s.totalBytes):0; upStat("Wird gesendet… "+p+"%"); });
     await task;
-    const meta = Object.assign({sender:profile, ts:Date.now(), type:kind, path, iv:enc.iv, mime, size:buf.byteLength}, extra||{});
+    const meta = Object.assign({sender:profile, ts:Date.now(), type:kind, path, mime:mime||"application/octet-stream", size:blob.size}, extra||{});
     await chatRef.child(id).set(await encryptObj(cryptoKey, meta));
     upStat(null);
     pushSignal("chat");
@@ -1104,12 +1103,8 @@ async function sendMediaFile(file){
 async function loadMedia(m){
   if(mediaCache[m._id]) return mediaCache[m._id];
   const url = await storage.ref(m.path).getDownloadURL();   // wirft, wenn abgelaufen/gelöscht
-  const resp = await fetch(url);
-  const ctbuf = await resp.arrayBuffer();
-  const pt = await decryptBytes(cryptoKey, ctbuf, m.iv);
-  const obj = URL.createObjectURL(new Blob([pt], {type:m.mime||"application/octet-stream"}));
-  mediaCache[m._id]=obj;
-  return obj;
+  mediaCache[m._id]=url;
+  return url;
 }
 function fillImage(imgEl,m){
   loadMedia(m).then(u=>{ imgEl.src=u; imgEl.classList.remove("ph"); })
