@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
 :root{
   --bg:#FBF8F1; --card:#ffffff; --text:#2A2018; --muted:#9A8B77;
@@ -205,6 +206,18 @@ main{padding:12px 14px 24px}
 #chat-send,#chat-mic{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;font-size:17px;cursor:pointer}
 #chat-send{background:var(--bordeaux);color:#fff}
 #chat-mic{background:var(--gold-soft);color:#7A5A12}
+#chat-attach{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;font-size:18px;cursor:pointer;background:var(--gold-soft);color:#7A5A12}
+.bubble.media{padding:4px;overflow:hidden}
+.chatimg{display:block;max-width:220px;max-height:280px;width:auto;border-radius:12px;cursor:pointer;background:#00000010}
+.chatimg.ph{width:200px;height:150px}
+.chatvid{position:relative;width:220px;max-width:70vw;height:150px;border-radius:12px;background:#1c140f;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;font-size:14px;gap:8px}
+.chatvid .vic{width:38px;height:38px;border-radius:50%;background:#ffffff2a;display:flex;align-items:center;justify-content:center;font-size:16px}
+.media-exp{font-size:13px;color:var(--muted);font-style:italic;padding:6px 4px}
+#chat-upstat{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom));background:var(--bordeaux);color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;z-index:60;box-shadow:0 4px 14px rgba(0,0,0,.2);display:none}
+.mediaov{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column}
+.mediaov.on{display:flex}
+.mediaov img,.mediaov video{max-width:96vw;max-height:82vh;border-radius:8px}
+.mediaov .mclose{position:absolute;top:calc(14px + env(safe-area-inset-top));right:18px;color:#fff;font-size:30px;background:none;border:0;cursor:pointer}
 .ci-rec{display:flex;align-items:center;gap:10px;flex:1}
 .rec-dot{width:11px;height:11px;border-radius:50%;background:var(--red);animation:recpulse 1s infinite;flex:0 0 auto}
 @keyframes recpulse{50%{opacity:.25}}
@@ -402,6 +415,8 @@ textarea.finp{resize:vertical}
   <div id="chatmsgs"></div>
   <div class="chat-input">
     <div class="ci-normal" id="ci-normal">
+      <button id="chat-attach" aria-label="Bild oder Video senden">📎</button>
+      <input id="chat-file" type="file" accept="image/*,video/*" style="display:none">
       <input id="chat-text" type="text" placeholder="Nachricht an die Agraffen…" autocomplete="off">
       <button id="chat-mic" aria-label="Sprachnachricht aufnehmen">🎤</button>
       <button id="chat-send" aria-label="Senden">➤</button>
@@ -413,6 +428,9 @@ textarea.finp{resize:vertical}
     </div>
   </div>
 </section>
+
+<div id="chat-upstat"></div>
+<div class="mediaov" id="mediaov"><button class="mclose" id="media-close">×</button><div id="media-body"></div></div>
 
 <nav class="bottomnav" id="bottomnav">
   <button class="navbtn active" data-s="home"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/></svg><span class="lb">Home</span></button>
@@ -446,7 +464,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.37";
+const APP_VERSION="2.39";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -842,6 +860,7 @@ function initFirebase(){
   try{ if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); }
   catch(e){ setSync(false,"offline"); return; }
   const db=firebase.database();
+  try{ storage=firebase.storage(); }catch(e){ storage=null; }
   membersRef=db.ref("groups/"+dbPath+"/members");
   membersRef.on("value", async snap=>{
     const val=snap.val()||{};
@@ -931,8 +950,26 @@ function setView(v){
 document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
 // ======== Chat ========
-let chatMsgs=[], chatRef=null, lastSeenChat=0;
+let chatMsgs=[], chatRef=null, lastSeenChat=0, storage=null;
+const MEDIA_MAX = 100*1024*1024;      // 100 MB Obergrenze (v.a. Videos)
+const MEDIA_TTL = 90*24*60*60*1000;   // 90 Tage
+const mediaCache={};                  // _id -> objectURL (entschlüsselt)
+const prunedSet=new Set();            // schon aufgeräumte Medien (Doppel-Löschen vermeiden)
+function pruneMedia(m){
+  if(!m||!m._id||prunedSet.has(m._id)) return; prunedSet.add(m._id);
+  try{ if(storage&&m.path) storage.ref(m.path).delete().catch(()=>{}); }catch(e){}
+  if(chatRef) chatRef.child(m._id).remove().catch(()=>{});
+}
 function esc(s){ return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+async function encryptBytes(key,buf){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, buf);
+  return { iv:b64(iv), blob:new Blob([ct]) };
+}
+async function decryptBytes(key,buf,ivB64){
+  return crypto.subtle.decrypt({name:"AES-GCM", iv:ub64(ivB64)}, key, buf);
+}
+function upStat(txt){ const e=document.getElementById("chat-upstat"); if(!e)return; if(txt==null){e.style.display="none";return;} e.textContent=txt; e.style.display="block"; }
 function subscribeChat(db){
   lastSeenChat=+(localStorage.getItem("ag-chatseen-"+profile)||0);
   chatRef=db.ref("groups/"+dbPath+"/chat");
@@ -940,7 +977,11 @@ function subscribeChat(db){
     const v=snap.val()||{}; const arr=[];
     for(const id in v){ const d=await decryptObj(cryptoKey,v[id]); if(d){ d._id=id; arr.push(d); } }
     arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
-    chatMsgs=arr;
+    // Medien älter als 90 Tage automatisch aufräumen (Datei + Eintrag); Texte bleiben
+    const cut=Date.now()-MEDIA_TTL;
+    const keep=[];
+    arr.forEach(m=>{ if((m.type==="image"||m.type==="video"||m.type==="voice") && m.path && (m.ts||0)<cut){ pruneMedia(m); } else { keep.push(m); } });
+    chatMsgs=keep;
     if(screen==="chat"){ renderChat(); markChatSeen(); }
     updateChatDot();
   });
@@ -976,6 +1017,10 @@ function renderChat(){
     if(m.type==="voice"){
       const dur=m.dur||0; const dl=Math.floor(dur/60)+":"+String(dur%60).padStart(2,"0");
       h+=`<div class="bubble voice"${mine?` data-del="${m._id}"`:""}><button class="vplay" data-vidx="${i}">▶</button><span class="vwave">🎙️ Sprachnachricht</span><span class="vdur">${dl}</span></div>`;
+    } else if(m.type==="image"){
+      h+=`<div class="bubble media"${mine?` data-del="${m._id}"`:""}><img class="chatimg ph" data-mimg="${i}" alt="Bild"></div>`;
+    } else if(m.type==="video"){
+      h+=`<div class="bubble media"${mine?` data-del="${m._id}"`:""}><div class="chatvid" data-mvid="${i}"><span class="vic">▶</span> Video</div></div>`;
     } else {
       h+=`<div class="bubble"${mine?` data-del="${m._id}"`:""}><div class="msg-text">${esc(m.text)}</div></div>`;
     }
@@ -983,6 +1028,8 @@ function renderChat(){
   if(open) h+="</div>";
   el.innerHTML=h;
   el.querySelectorAll(".vplay").forEach(b=>b.onclick=()=>playVoice(+b.dataset.vidx,b));
+  el.querySelectorAll(".chatimg[data-mimg]").forEach(im=>{ const m=chatMsgs[+im.dataset.mimg]; if(m){ fillImage(im,m); im.onclick=()=>openMediaOverlay(m); } });
+  el.querySelectorAll(".chatvid[data-mvid]").forEach(v=>{ const m=chatMsgs[+v.dataset.mvid]; if(m) v.onclick=()=>openMediaOverlay(m); });
   el.querySelectorAll("[data-del]").forEach(b=>bindLongPress(b,b.dataset.del));
   window.scrollTo(0,document.body.scrollHeight);
 }
@@ -1008,26 +1055,87 @@ function finishRec(send){
   clearInterval(recTimer);
   if(!mediaRec||mediaRec.state==="inactive"){ recUI(false); return; }
   const dur=Math.max(1,Math.round((Date.now()-recStart)/1000));
-  mediaRec.onstop=async()=>{ stopTracks(); if(send&&recChunks.length){ const blob=new Blob(recChunks,{type:recMime}); const buf=await blob.arrayBuffer(); sendVoice(abToB64(buf),recMime,dur); } recChunks=[]; };
+  mediaRec.onstop=async()=>{ stopTracks(); if(send&&recChunks.length){ const blob=new Blob(recChunks,{type:recMime}); uploadMedia("voice",recMime,blob,{dur}); } recChunks=[]; };
   try{ mediaRec.stop(); }catch(e){}
   recUI(false);
 }
-function playVoice(idx,btn){
-  const m=chatMsgs[idx]; if(!m||!m.audio)return;
+async function playVoice(idx,btn){
+  const m=chatMsgs[idx]; if(!m)return;
   if(curAudio){ try{curAudio.pause();}catch(e){} if(curBtn)curBtn.textContent="▶"; const same=curBtn===btn; curAudio=null; curBtn=null; if(same) return; }
+  let url=null;
   try{
-    const blob=new Blob([ub64(m.audio)],{type:m.mime||"audio/mp4"});
-    const url=URL.createObjectURL(blob); const a=new Audio(url); curAudio=a; curBtn=btn; btn.textContent="⏸";
-    a.onended=()=>{ btn.textContent="▶"; try{URL.revokeObjectURL(url);}catch(e){} curAudio=null; curBtn=null; };
+    if(m.path){ btn.textContent="…"; url=await loadMedia(m); }
+    else if(m.audio){ url=URL.createObjectURL(new Blob([ub64(m.audio)],{type:m.mime||"audio/mp4"})); }
+  }catch(e){ btn.textContent="▶"; alert("Sprachnachricht abgelaufen oder nicht verfügbar."); return; }
+  if(!url){ btn.textContent="▶"; return; }
+  try{
+    const a=new Audio(url); curAudio=a; curBtn=btn; btn.textContent="⏸";
+    a.onended=()=>{ btn.textContent="▶"; curAudio=null; curBtn=null; };
     a.play().catch(()=>{ btn.textContent="▶"; curAudio=null; curBtn=null; });
-  }catch(e){}
+  }catch(e){ btn.textContent="▶"; }
 }
+// ---- Bilder / Videos ----
+async function uploadMedia(kind,mime,blobData,extra){
+  // blobData: Blob/ArrayBuffer der ORIGINALdaten; verschlüsselt hochladen
+  if(!chatRef||!cryptoKey||!storage){ alert("Speicher nicht bereit."); return; }
+  const id="m"+Date.now()+Math.random().toString(36).slice(2,5);
+  const buf = blobData instanceof Blob ? await blobData.arrayBuffer() : blobData;
+  upStat("Wird gesendet… 0%");
+  try{
+    const enc = await encryptBytes(cryptoKey, buf);
+    const path = "groups/"+dbPath+"/media/"+id;
+    const task = storage.ref(path).put(enc.blob, {contentType:"application/octet-stream"});
+    task.on("state_changed", s=>{ const p=s.totalBytes?Math.round(100*s.bytesTransferred/s.totalBytes):0; upStat("Wird gesendet… "+p+"%"); });
+    await task;
+    const meta = Object.assign({sender:profile, ts:Date.now(), type:kind, path, iv:enc.iv, mime, size:buf.byteLength}, extra||{});
+    await chatRef.child(id).set(await encryptObj(cryptoKey, meta));
+    upStat(null);
+    pushSignal("chat");
+  }catch(e){ upStat(null); alert("Senden fehlgeschlagen. Bitte nochmal versuchen."); }
+}
+async function sendMediaFile(file){
+  if(!file) return;
+  const isImg=(file.type||"").startsWith("image/"), isVid=(file.type||"").startsWith("video/");
+  if(!isImg && !isVid){ alert("Bitte ein Bild oder Video auswählen."); return; }
+  if(isVid && file.size>MEDIA_MAX){ alert("Das Video ist zu groß (max. 100 MB). Bitte einen kürzeren Clip senden."); return; }
+  if(file.size>MEDIA_MAX){ alert("Datei zu groß (max. 100 MB)."); return; }
+  await uploadMedia(isImg?"image":"video", file.type||(isImg?"image/jpeg":"video/mp4"), file, {name:file.name||""});
+}
+async function loadMedia(m){
+  if(mediaCache[m._id]) return mediaCache[m._id];
+  const url = await storage.ref(m.path).getDownloadURL();   // wirft, wenn abgelaufen/gelöscht
+  const resp = await fetch(url);
+  const ctbuf = await resp.arrayBuffer();
+  const pt = await decryptBytes(cryptoKey, ctbuf, m.iv);
+  const obj = URL.createObjectURL(new Blob([pt], {type:m.mime||"application/octet-stream"}));
+  mediaCache[m._id]=obj;
+  return obj;
+}
+function fillImage(imgEl,m){
+  loadMedia(m).then(u=>{ imgEl.src=u; imgEl.classList.remove("ph"); })
+    .catch(()=>{ const b=imgEl.closest(".bubble"); if(b) b.innerHTML='<div class="media-exp">📷 Bild abgelaufen (90 Tage)</div>'; });
+}
+function openMediaOverlay(m){
+  const ov=document.getElementById("mediaov"), body=document.getElementById("media-body"); if(!ov||!body)return;
+  body.innerHTML='<div style="color:#fff;font-size:14px">Lädt…</div>'; ov.classList.add("on");
+  loadMedia(m).then(u=>{
+    if(m.type==="video"){ body.innerHTML=`<video src="${u}" controls autoplay playsinline></video>`; }
+    else { body.innerHTML=`<img src="${u}" alt="Bild">`; }
+  }).catch(()=>{ body.innerHTML='<div style="color:#fff;font-size:15px">Diese Medien sind abgelaufen (90 Tage) und wurden gelöscht.</div>'; });
+}
+function closeMediaOverlay(){ const ov=document.getElementById("mediaov"), body=document.getElementById("media-body"); if(ov)ov.classList.remove("on"); if(body)body.innerHTML=""; }
+
 (function(){
   const inp=document.getElementById("chat-text"), btn=document.getElementById("chat-send"), mic=document.getElementById("chat-mic");
   function go(){ if(inp&&inp.value.trim()){ sendChat(inp.value); inp.value=""; } }
   if(btn) btn.onclick=go;
   if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
   if(mic) mic.onclick=startRec;
+  const att=document.getElementById("chat-attach"), fi=document.getElementById("chat-file");
+  if(att&&fi){ att.onclick=()=>fi.click(); fi.onchange=()=>{ const f=fi.files&&fi.files[0]; fi.value=""; if(f) sendMediaFile(f); }; }
+  const mc=document.getElementById("media-close"), ov=document.getElementById("mediaov");
+  if(mc) mc.onclick=closeMediaOverlay;
+  if(ov) ov.addEventListener("click",e=>{ if(e.target===ov) closeMediaOverlay(); });
   const rc=document.getElementById("rec-cancel"), rs=document.getElementById("rec-send");
   if(rc) rc.onclick=cancelRec;
   if(rs) rs.onclick=()=>finishRec(true);
