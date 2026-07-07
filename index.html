@@ -15,6 +15,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <style>
 :root{
   --bg:#FBF8F1; --card:#ffffff; --text:#2A2018; --muted:#9A8B77;
@@ -445,7 +446,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.36";
+const APP_VERSION="2.37";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -947,7 +948,7 @@ function subscribeChat(db){
 function unreadChat(){ return chatMsgs.filter(m=>(m.ts||0)>lastSeenChat && m.sender!==profile).length; }
 function updateChatDot(){ const d=document.getElementById("chatdot"); if(d) d.style.display=unreadChat()>0?"block":"none"; }
 function markChatSeen(){ if(chatMsgs.length){ lastSeenChat=chatMsgs[chatMsgs.length-1].ts||Date.now(); try{localStorage.setItem("ag-chatseen-"+profile,String(lastSeenChat));}catch(e){} } updateChatDot(); }
-async function sendChat(text){ if(!chatRef||!cryptoKey)return; text=(text||"").trim(); if(!text)return; const id="m"+Date.now()+Math.random().toString(36).slice(2,5); try{ chatRef.child(id).set(await encryptObj(cryptoKey,{sender:profile,text,ts:Date.now()})); }catch(e){} }
+async function sendChat(text){ if(!chatRef||!cryptoKey)return; text=(text||"").trim(); if(!text)return; const id="m"+Date.now()+Math.random().toString(36).slice(2,5); try{ chatRef.child(id).set(await encryptObj(cryptoKey,{sender:profile,text,ts:Date.now()})); }catch(e){} pushSignal("chat"); }
 async function deleteMsg(id){ if(!chatRef)return; try{ await chatRef.child(id).remove(); }catch(e){} }
 function bindLongPress(el,id){
   let t=null;
@@ -1056,7 +1057,7 @@ async function createTrip(title,parts,ranges,type){
     stays:[],fixedStay:null,
     transport:[{id:"tA",label:"Zug"},{id:"tB",label:"Flug"},{id:"tC",label:"Auto"}],fixedTransport:null,
     tasks:[],itinerary:[]};
-  await writeTrip(id); openTripId=id; if(screen==="trips")renderTrips();
+  await writeTrip(id); openTripId=id; if(screen==="trips")renderTrips(); pushSignal("invite");
 }
 async function toggleVote(tid,kind,oid){
   if(!votesRef||!cryptoKey)return;
@@ -1066,7 +1067,7 @@ async function toggleVote(tid,kind,oid){
 async function addDate(tid,start,end){ const t=trips[tid]; if(!t)return; t.dates.push({id:"d"+Date.now().toString(36),start,end:end||""}); await writeTrip(tid); }
 async function addStay(tid,label,url){ const t=trips[tid]; if(!t)return; t.stays.push({id:"s"+Date.now().toString(36),label,url:url||"",by:profile}); await writeTrip(tid); }
 async function addTransport(tid,label){ const t=trips[tid]; if(!t)return; t.transport.push({id:"x"+Date.now().toString(36),label}); await writeTrip(tid); }
-async function addTask(tid,text){ const t=trips[tid]; if(!t)return; t.tasks.push({id:"k"+Date.now().toString(36),text,assignee:null,done:false,by:profile}); await writeTrip(tid); }
+async function addTask(tid,text){ const t=trips[tid]; if(!t)return; t.tasks.push({id:"k"+Date.now().toString(36),text,assignee:null,done:false,by:profile}); await writeTrip(tid); pushSignal("task"); }
 async function claimTask(tid,kid){ const t=trips[tid]; if(!t)return; const k=t.tasks.find(x=>x.id===kid); if(!k)return; k.assignee=(k.assignee===profile)?null:profile; await writeTrip(tid); }
 async function assignTask(tid,kid,name){ const t=trips[tid]; if(!t)return; const k=(t.tasks||[]).find(x=>x.id===kid); if(!k)return; k.assignee=name||null; await writeTrip(tid); }
 async function renameTrip(tid,title){ const t=trips[tid]; if(!t||!isCreator(t))return; t.title=title; await writeTrip(tid); }
@@ -1304,6 +1305,7 @@ async function saveUserEvent(obj, editId){
     eventRsvp[eid].votes[profile]=true;
     try{ await eventsRsvpRef.child(eid).child("info").set(await encryptObj(cryptoKey,eventRsvp[eid].info)); }catch(e){}
     try{ await eventsRsvpRef.child(eid).child("v").child(profile).set(await encryptObj(cryptoKey,{in:true,ts:Date.now()})); }catch(e){}
+    pushSignal("invite");
   }
   return id;
 }
@@ -1432,6 +1434,7 @@ async function askEvent(ev){
   await ensureEventInfo(eid, ev);
   eventRsvp[eid].asked={by:profile, ts:Date.now()};
   try{ await eventsRsvpRef.child(eid).child("asked").set(await encryptObj(cryptoKey,eventRsvp[eid].asked)); }catch(e){}
+  pushSignal("vote");
   openEventSheet(eventRsvp[eid].info||ev);
   if(screen==="home") renderHome();
 }
@@ -1644,12 +1647,22 @@ function renderProfile(){
   }
 }
 // ======== Benachrichtigungs-Einstellungen ========
+const VAPID="BMoC5wKc2l6KEGFF6-HGf2O-CIJJbEGASe3sd9GhY6g6oQe3CnNBVNrvNSXS769p9kVY613kaXPVuRIgs0x4wU0";
 let notifRef=null, notifPrefs={enabled:false,chat:true,tasks:true,invites:true,votes:true};
 function loadNotifPrefs(){ try{ const o=JSON.parse(localStorage.getItem("ag-notif-"+profile)||"null"); if(o) notifPrefs=Object.assign({enabled:false,chat:true,tasks:true,invites:true,votes:true},o); }catch(e){} }
 function subscribeNotif(db){ notifRef=db.ref("groups/"+dbPath+"/notif"); }
 async function saveNotifPrefs(){
   try{ localStorage.setItem("ag-notif-"+profile, JSON.stringify(notifPrefs)); }catch(e){}
-  if(notifRef){ try{ await notifRef.child(profile).update({enabled:!!notifPrefs.enabled, chat:!!notifPrefs.chat, tasks:!!notifPrefs.tasks, invites:!!notifPrefs.invites, votes:!!notifPrefs.votes, updated:Date.now()}); }catch(e){} }
+  if(notifRef){ try{ await notifRef.child(profile).update({enabled:!!notifPrefs.enabled, chat:!!notifPrefs.chat, tasks:!!notifPrefs.tasks, invites:!!notifPrefs.invites, votes:!!notifPrefs.votes, token:notifPrefs.token||null, updated:Date.now()}); }catch(e){} }
+}
+async function registerFcmToken(){
+  try{
+    if(!firebase.messaging) return;
+    if(firebase.messaging.isSupported && !(await firebase.messaging.isSupported())) return;
+    const reg = await navigator.serviceWorker.getRegistration() || await navigator.serviceWorker.ready;
+    const token = await firebase.messaging().getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
+    if(token){ notifPrefs.token=token; await saveNotifPrefs(); }
+  }catch(e){ console.warn("FCM-Token:", e&&e.message); }
 }
 async function enableNotifications(){
   if(!("Notification" in window)){ alert("Dieses Gerät unterstützt keine Benachrichtigungen."); notifPrefs.enabled=false; await saveNotifPrefs(); return false; }
@@ -1657,7 +1670,11 @@ async function enableNotifications(){
   if(perm!=="granted"){ try{ perm=await Notification.requestPermission(); }catch(e){} }
   if(perm!=="granted"){ alert("Benachrichtigungen wurden nicht erlaubt. Du kannst das in den Handy-Einstellungen für die App ändern."); notifPrefs.enabled=false; await saveNotifPrefs(); return false; }
   notifPrefs.enabled=true; await saveNotifPrefs();
+  await registerFcmToken();
   return true;
+}
+function pushSignal(type){
+  try{ if(dbPath && firebase.apps && firebase.apps.length){ firebase.database().ref("groups/"+dbPath+"/notify").push({type:type, by:profile, ts:Date.now()}); } }catch(e){}
 }
 function korkenRoulette(){
   const open=DATA.filter(d=>!done[d.id]);
