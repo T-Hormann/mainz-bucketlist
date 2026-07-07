@@ -1,0 +1,11 @@
+{
+  "name": "agraffen-functions",
+  "description": "Push-Benachrichtigungen fuer die Agraffen App",
+  "engines": { "node": "20" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.1.1"
+  },
+  "private": true
+}
