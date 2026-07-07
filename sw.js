@@ -6,7 +6,7 @@
    - Firebase-Live-Traffic (Sync/Chat): NIE abgefangen -> braucht echtes Netz.
    - Karten-Kacheln: network, offline Rückfall auf bereits Gesehenes.
 */
-const VERSION = '2.35';
+const VERSION = '2.36';
 const CACHE = 'agraffen-' + VERSION;
 const CDN = ['unpkg.com', 'www.gstatic.com'];
 
@@ -74,4 +74,26 @@ self.addEventListener('fetch', e => {
       }).catch(() => cached);
     })
   );
+});
+
+// ======== Push-Benachrichtigungen ========
+self.addEventListener('push', e => {
+  let d = { title: 'Agraffen', body: 'Neues in der App' };
+  try { if (e.data) d = Object.assign(d, e.data.json()); }
+  catch (_) { try { d.body = e.data.text(); } catch (e2) {} }
+  e.waitUntil(self.registration.showNotification(d.title || 'Agraffen', {
+    body: d.body || '',
+    icon: 'icon-512.png',
+    badge: 'icon-512.png',
+    tag: d.tag || 'agraffen',
+    data: d.data || {}
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) return c.focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  })());
 });
