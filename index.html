@@ -262,7 +262,7 @@ main{padding:12px 14px 24px}
 .sheet p.addr{font-size:13.5px;color:var(--muted);margin:6px 0 14px}
 .smap{width:100%;height:240px;border:0;border-radius:14px;background:#EDE6DA;display:block}
 .btn-row{display:flex;gap:10px;margin-top:14px}
-.btn{flex:1;border:0;border-radius:13px;padding:14px 10px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.btn{flex:1;border:0;border-radius:13px;padding:14px 10px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
 .btn.check-btn{background:var(--card);border:1.5px solid var(--line);color:var(--text)}
 .btn.check-btn.done{background:var(--green);border-color:var(--green);color:#fff}
 .btn.maps{background:var(--bordeaux);color:#fff}
@@ -484,7 +484,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.44";
+const APP_VERSION="2.45";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -965,7 +965,13 @@ function setView(v){
   document.querySelectorAll("#viewseg button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
   document.getElementById("main").style.display = v==="liste"?"":"none";
   document.getElementById("map").style.display   = v==="karte"?"block":"none";
-  if(v==="karte"){ initMap(); setTimeout(()=>{ map&&map.invalidateSize(); renderMap(); },80); }
+  if(v==="karte"){
+    initMap();
+    const fix=()=>{ if(map){ map.invalidateSize(); renderMap(); } };
+    requestAnimationFrame(()=>requestAnimationFrame(fix));
+    setTimeout(fix,250);
+    setTimeout(()=>{ if(map) map.invalidateSize(); },600);
+  }
 }
 document.getElementById("viewseg").querySelectorAll("button").forEach(b=>{ b.onclick=()=>setView(b.dataset.v); });
 
@@ -1388,7 +1394,10 @@ async function loadEvents(){
     const r=await fetch("events.json?x="+Date.now(),{cache:"no-store"});
     if(!r.ok) return;
     const j=await r.json();
-    EVENTS=(j.events||[]).filter(e=>e&&e.name&&e.start).sort((a,b)=>a.start.localeCompare(b.start));
+    let evs=(j.events||[]).filter(e=>e&&e.name&&e.start);
+    const seenEv=new Set();
+    evs=evs.filter(e=>{ const key=(e.name||"").toLowerCase().replace(/[„“”"'’‚`´–—\-]/g," ").replace(/\s+/g," ").trim()+"|"+(e.start||""); if(seenEv.has(key)) return false; seenEv.add(key); return true; });
+    EVENTS=evs.sort((a,b)=>a.start.localeCompare(b.start));
     eventsUpdated=j.updated||"";
     if(screen==="events") renderEvents();
     if(screen==="home") renderHome();
@@ -1758,7 +1767,7 @@ function renderProfile(){
         <label class="nrow"><span>🧭 Neue Einladung (Trip/Event)</span><input type="checkbox" data-nt="invites" ${nt.invites?"checked":""}></label>
         <label class="nrow"><span>🗳️ Neue Abstimmung / Nachfrage</span><input type="checkbox" data-nt="votes" ${nt.votes?"checked":""}></label>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:8px">Push aufs (auch gesperrte) Handy kommt, sobald der Server-Teil aktiv ist. iPhone: App zum Home-Bildschirm hinzufügen und einmal „Erlauben" tippen.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px">Push aufs (auch gesperrte) Handy. iPhone: App zum Home-Bildschirm hinzufügen und einmal „Erlauben" tippen.</p>
     </div>`;
   }
   el.innerHTML=h;
@@ -2094,15 +2103,13 @@ function openSheet(id){
     ${d.desc?`<p class="desc">${esc(d.desc)}</p>`:""}
     ${addrLine}
     ${authorLine}
-    <iframe class="smap" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-      src="https://maps.google.com/maps?q=${q}&z=15&output=embed"></iframe>
     <div class="rating" id="rating"></div>
     <div class="peoplebox" id="peoplebox"></div>
     <div class="commentbox" id="commentbox"></div>
     <div class="btn-row">
       <button class="btn check-btn" id="sheetcheck"></button>
       <a class="btn maps" target="_blank" rel="noopener"
-         href="https://www.google.com/maps/search/?api=1&query=${q}">Google Maps</a>
+         href="https://www.google.com/maps/search/?api=1&query=${q}">Navigieren</a>
     </div>
     ${ownerBtns}`;
   updateSheetBtn(id);
@@ -2148,10 +2155,30 @@ function updateSheetBtn(id){
   b.textContent=done[id]?"✓ Erledigt":"Als erledigt markieren";
 }
 function closeSheet(){
-  document.getElementById("sheet").classList.remove("open");
+  const s=document.getElementById("sheet");
+  s.style.transition=""; s.style.transform="";
+  s.classList.remove("open");
   document.getElementById("backdrop").classList.remove("open");
 }
 document.getElementById("backdrop").onclick=closeSheet;
+// Spot-Sheet nach unten wegwischen zum Schließen
+(function(){
+  const s=document.getElementById("sheet"); if(!s) return;
+  let startY=0, dy=0, dragging=false;
+  s.addEventListener("pointerdown",e=>{
+    const onGrip=e.target&&e.target.classList&&e.target.classList.contains("grip");
+    if(s.scrollTop>2 && !onGrip) return;
+    dragging=true; startY=e.clientY; dy=0; s.style.transition="none";
+  });
+  s.addEventListener("pointermove",e=>{
+    if(!dragging) return;
+    dy=e.clientY-startY; if(dy<0) dy=0;
+    if(dy>0) s.style.transform="translateY("+dy+"px)";
+  });
+  const end=()=>{ if(!dragging) return; dragging=false; s.style.transition=""; const close=dy>90; s.style.transform=""; if(close) closeSheet(); };
+  s.addEventListener("pointerup",end);
+  s.addEventListener("pointercancel",end);
+})();
 
 // ======== Eigene Spots ========
 let spotsRef=null;
