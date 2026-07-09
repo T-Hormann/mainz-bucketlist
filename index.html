@@ -367,6 +367,33 @@ textarea.finp{resize:vertical}
 .trip-w{font-size:12.5px;color:var(--muted)}
 .trip-w.now{color:var(--green);font-weight:600}
 .trip-w.plan{color:var(--bordeaux)}
+/* Home: „Diese Tage" */
+.soonhi{border:1px solid var(--bordeaux);box-shadow:0 4px 16px rgba(210,30,90,.10)}
+.soonrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+.soonrow:last-child{border-bottom:0}
+.soon-badge{flex:0 0 auto;background:var(--bordeaux);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.soon-badge.now{background:var(--green)}
+.soon-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.soon-t{font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.soon-m{font-size:12.5px;color:var(--muted)}
+.soonrow .chev{flex:0 0 auto;color:var(--muted);font-size:18px}
+/* Home: „Wartet auf dich" */
+.waitrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+.waitrow:last-child{border-bottom:0}
+.wait-i{flex:0 0 auto;font-size:16px;width:20px;text-align:center}
+.wait-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.wait-t{font-size:14px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wait-s{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wait-tag{flex:0 0 auto;background:var(--bordeaux-soft);color:var(--bordeaux-dark);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+/* Home: kombinierter Kalender */
+.agrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+.agrow:last-child{border-bottom:0}
+.ag-when{flex:0 0 auto;width:66px;font-size:12px;font-weight:600;color:var(--bordeaux)}
+.ag-when.plan{color:var(--muted)}
+.ag-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.ag-t{font-size:14.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-m{font-size:12px;color:var(--muted)}
+.agrow .chev{flex:0 0 auto;color:var(--muted);font-size:17px}
 .nrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:14.5px}
 .nrow:last-child{border-bottom:0}
 .nrow input{width:20px;height:20px;flex:0 0 auto}
@@ -484,7 +511,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.45";
+const APP_VERSION="2.46";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1656,6 +1683,45 @@ function eventOfWeekCard(){
     <button class="kbtn" id="eowbtn" style="margin-top:11px">Alle Events ansehen</button></div>`;
 }
 // ======== Home ========
+function daysUntil(s){ const t=new Date(); t.setHours(0,0,0,0); return Math.round((new Date(s+"T12:00")-t)/864e5); }
+function daysLabel(s){ const n=daysUntil(s); if(n<=0)return "heute"; if(n===1)return "morgen"; return "in "+n+" Tagen"; }
+function fmtDayShort(s){ try{return new Date(s+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"});}catch(e){return s;} }
+// Kalender: fixierte Trips + Events mit ≥1 Zusage, chronologisch
+function agendaItems(){
+  const items=[];
+  upcomingTrips().forEach(x=>{
+    if(x.planning) return;
+    items.push({type:"trip", id:x.id, start:x.start, running:x.running, title:x.t.title||"Trip", meta:x.running?("läuft gerade · "+rangeFmt(x.fd)):rangeFmt(x.fd)});
+  });
+  proposedEvents().forEach(x=>{
+    items.push({type:"event", id:x.eid, start:String(x.ev.start).slice(0,10), title:x.ev.name, count:x.count, meta:fmtDayShort(String(x.ev.start).slice(0,10))+" · "+x.count+" dabei"});
+  });
+  items.sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+  return items;
+}
+// Offene Aufgaben aus allen Trips, in denen ich dabei bin
+function myOpenTasks(){
+  const out=[];
+  Object.keys(trips).forEach(tid=>{
+    const t=trips[tid]; if(!t) return;
+    const ps=tParts(t); if(!ps.includes(profile)) return;
+    (t.tasks||[]).forEach(k=>{
+      if(k.done) return;
+      if(k.assignee===profile) out.push({tid, id:k.id, text:k.text, tripTitle:t.title||"Trip", assigned:true});
+      else if(!k.assignee) out.push({tid, id:k.id, text:k.text, tripTitle:t.title||"Trip", assigned:false});
+    });
+  });
+  out.sort((a,b)=>(a.assigned?0:1)-(b.assigned?0:1));
+  return out;
+}
+// „Wartet auf dich": Nachfragen + Abstimmungen + Aufgaben gebündelt
+function waitingItems(){
+  const items=[];
+  openNachfragen().forEach(x=>items.push({kind:"nachfrage", icon:"🔔", title:x.ev.name, sub:"Kommst du mit? · "+fmtDayShort(String(x.ev.start).slice(0,10)), tag:"antworten", ev:x.ev}));
+  openVotes().filter(v=>!v.mineVoted).forEach(x=>items.push({kind:"vote", icon:x.icon, title:x.title, sub:x.label+" · deine Stimme fehlt", tag:"abstimmen", tid:x.tid}));
+  myOpenTasks().forEach(x=>items.push({kind:"task", icon:"✅", title:x.text, sub:x.tripTitle+(x.assigned?" · dir zugewiesen":" · noch offen"), tag:x.assigned?"erledigen":"übernehmen", tid:x.tid}));
+  return items;
+}
 function renderHome(){
   const el=document.getElementById("s-home"); if(!el)return;
   const total=DATA.length, mine=Object.keys(done).length;
@@ -1665,59 +1731,64 @@ function renderHome(){
   let h="";
   h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
 
-  // 1a) Offene Nachfragen (Event-Abstimmung)
-  const nf=openNachfragen();
-  if(nf.length){
-    const rows=nf.slice(0,5).map(x=>`<div class="voterow" data-evkey="${x.eid}"><span class="vote-t">🔔 ${esc(x.ev.name)} · ${fmtShort(x.ev.start)}</span><span class="vote-s need">kommst du mit?</span></div>`).join("");
-    h+=`<div class="hcard"><h3>🔔 Offene Nachfragen <span class="badge-soon">${nf.length}</span></h3>${rows}</div>`;
+  const agenda=agendaItems();
+  const soon=agenda.filter(x=>x.running || daysUntil(x.start)<=10);
+  const soonKeys=new Set(soon.map(x=>x.type+":"+x.id));
+
+  // 1) Diese Tage (Event/Trip in ≤10 Tagen) – prominent
+  if(soon.length){
+    const rows=soon.map(x=>{
+      const badge = x.running?`<span class="soon-badge now">läuft</span>`:`<span class="soon-badge">${daysLabel(x.start)}</span>`;
+      const emoji = x.type==="trip"?"🧭":"📅";
+      return `<div class="soonrow" data-akey="${x.type}:${x.id}">${badge}<div class="soon-b"><span class="soon-t">${emoji} ${esc(x.title)}</span><span class="soon-m">${esc(x.meta)}</span></div><span class="chev">›</span></div>`;
+    }).join("");
+    h+=`<div class="hcard soonhi"><h3>🔥 Diese Tage</h3>${rows}</div>`;
   }
 
-  // 1b) Kommende Events (angefragt / zugesagt)
-  const pe=proposedEvents();
-  if(pe.length){
-    const rows=pe.slice(0,5).map(x=>`<div class="voterow" data-evkey="${x.eid}"><span class="vote-t">📅 ${esc(x.ev.name)} · ${fmtShort(x.ev.start)}</span><span class="vote-s">${x.count} dabei</span></div>`).join("");
-    h+=`<div class="hcard"><h3>📅 Kommende Events</h3>${rows}</div>`;
+  // 2) Wartet auf dich (Nachfragen + Abstimmungen + Aufgaben)
+  const wait=waitingItems();
+  if(wait.length){
+    const rows=wait.slice(0,8).map((x,i)=>`<div class="waitrow" data-widx="${i}"><span class="wait-i">${x.icon}</span><div class="wait-b"><span class="wait-t">${esc(x.title)}</span><span class="wait-s">${esc(x.sub)}</span></div><span class="wait-tag">${x.tag}</span></div>`).join("");
+    const more = wait.length>8?`<div class="vote-more">+${wait.length-8} weitere</div>`:"";
+    h+=`<div class="hcard"><h3>⏳ Wartet auf dich <span class="badge-soon">${wait.length}</span></h3>${rows}${more}</div>`;
   }
 
+  // 3) Kommende Events & Trips (gebündelt)
+  const rest=agenda.filter(x=>!soonKeys.has(x.type+":"+x.id));
+  const planning=upcomingTrips().filter(x=>x.planning);
+  if(rest.length || planning.length){
+    let rows=rest.map(x=>{
+      const emoji=x.type==="trip"?"🧭":"📅";
+      return `<div class="agrow" data-akey="${x.type}:${x.id}"><span class="ag-when">${fmtDayShort(x.start)}</span><div class="ag-b"><span class="ag-t">${emoji} ${esc(x.title)}</span><span class="ag-m">${esc(x.meta)}</span></div><span class="chev">›</span></div>`;
+    }).join("");
+    rows+=planning.map(x=>`<div class="agrow" data-akey="trip:${x.id}"><span class="ag-when plan">offen</span><div class="ag-b"><span class="ag-t">🧭 ${esc(x.t.title||'Trip')}</span><span class="ag-m">Termin offen · ${(x.t.dates||[]).length} Vorschläge</span></div><span class="chev">›</span></div>`).join("");
+    h+=`<div class="hcard"><h3>🗓️ Kommende Events & Trips</h3>${rows}</div>`;
+  } else if(!soon.length){
+    h+=`<div class="hcard soon"><h3>🗓️ Kommende Events & Trips</h3><div class="ttl">Nichts geplant</div><p>Schlag im Events- oder Trips-Tab den nächsten Termin vor.</p></div>`;
+  }
 
-  // 3) Nächster Trip
-  h+=upcomingTripsCard();
-
-  // 4) Ranking (funktional)
+  // 4) Ranking
   h+=`<div class="hcard"><h3>🏆 Ranking — wer war am meisten unterwegs</h3>`;
   rank.forEach((r,i)=>{
     h+=`<div class="rank-row clk" data-p="${r.n}"><span class="pos">${i+1}.</span>${avatar(r.n)}<span class="nm">${r.n}</span><span class="ct">${r.c}</span></div>`;
   });
   h+=`<p style="font-size:12px;color:var(--muted);margin-top:8px">Tipp: Auf einen Namen tippen für sein Profil.</p></div>`;
 
-  // 5) Gemeinsame Kasse (echt)
+  // 5) Gemeinsame Kasse
   const kb=kasseBalances(); const myBal=Math.round((kb[profile]||0)*100)/100; const anyK=Object.keys(kasse).length;
   let kLine;
   if(!anyK){ kLine=`<div class="ttl">Noch keine Ausgaben</div><p>Trag die erste gemeinsame Ausgabe ein – die App rechnet aus, wer wem was schuldet.</p>`; }
   else { const st = myBal>0.005?`Du bekommst <b class="amt plus">${eur(myBal)}</b>`:(myBal<-0.005?`Du schuldest <b class="amt minus">${eur(-myBal)}</b>`:`Du bist ausgeglichen ✓`); kLine=`<div class="ttl">${st}</div><p>${anyK} Eintrag${anyK>1?"e":""} · tippe für Details.</p>`; }
   h+=`<div class="hcard"><h3>💶 Gemeinsame Kasse</h3>${kLine}<button class="kbtn" id="kasseopen" style="margin-top:11px">Kasse öffnen</button></div>`;
 
-  // 6) Abstimmungen (offene Trip-Entscheidungen)
-  const ov=openVotes(); const missing=ov.filter(x=>!x.mineVoted).length;
-  let vLine;
-  if(!ov.length){ vLine=`<div class="ttl">Keine offenen Abstimmungen</div><p>Sobald ein Trip geplant wird, tauchen Termin-, Unterkunfts- und Anreise-Abstimmungen automatisch hier auf.</p>`; }
-  else {
-    vLine=ov.slice(0,5).map(x=>`<div class="voterow" data-tid="${x.tid}"><span class="vote-t">${x.icon} ${esc(x.title)} · ${x.label}</span><span class="vote-s ${x.mineVoted?"":"need"}">${x.mineVoted?`${x.voted}/${x.total} ✓`:"deine Stimme fehlt"}</span></div>`).join("");
-    if(ov.length>5) vLine+=`<div class="vote-more">+${ov.length-5} weitere</div>`;
-  }
-  h+=`<div class="hcard"><h3>🗳️ Offene Abstimmungen${missing?` <span class="badge-soon">${missing} offen</span>`:""}</h3>${vLine}</div>`;
-
   h+=`<div class="ver">Agraffen-App · v${APP_VERSION}</div>`;
   el.innerHTML=h;
-  const k=document.getElementById("korken"); if(k) k.onclick=korkenRoulette;
-  const eb=document.getElementById("eowbtn"); if(eb) eb.onclick=()=>setScreen("events");
-  const tb=document.getElementById("trbtn"); if(tb) tb.onclick=()=>{ setScreen("trips"); const nt=nextTrip(); if(nt) openTrip(nt.id); };
+  const goAgenda=(key)=>{ const i=key.indexOf(":"); const type=key.slice(0,i), id=key.slice(i+1); if(type==="trip"){ setScreen("trips"); openTrip(id); } else { const rr=eventRsvp[id]; if(rr&&rr.info) openEventSheet(rr.info); } };
+  el.querySelectorAll("[data-akey]").forEach(r=>r.onclick=()=>goAgenda(r.dataset.akey));
+  el.querySelectorAll(".waitrow[data-widx]").forEach(r=>{ const x=wait[+r.dataset.widx]; r.onclick=()=>{ if(x.kind==="nachfrage") openEventSheet(x.ev); else { setScreen("trips"); openTrip(x.tid); } }; });
   const pb=document.getElementById("profbtn"); if(pb) pb.onclick=()=>openProfile(profile);
   el.querySelectorAll(".rank-row[data-p]").forEach(r=>r.onclick=()=>openProfile(r.dataset.p));
   const ko=document.getElementById("kasseopen"); if(ko) ko.onclick=()=>setScreen("kasse");
-  el.querySelectorAll(".voterow[data-tid]").forEach(r=>r.onclick=()=>{ setScreen("trips"); openTrip(r.dataset.tid); });
-  el.querySelectorAll(".triprow[data-tid]").forEach(r=>r.onclick=()=>{ setScreen("trips"); openTrip(r.dataset.tid); });
-  el.querySelectorAll(".voterow[data-evkey]").forEach(r=>r.onclick=()=>{ const rr=eventRsvp[r.dataset.evkey]; if(rr&&rr.info) openEventSheet(rr.info); });
 }
 let profileView=null;
 function openProfile(name){ profileView=name; setScreen("profile"); }
@@ -2031,6 +2102,8 @@ function updateAppbar(){
 }
 // ======== Feedback & Versionsverlauf ========
 const CHANGELOG=[
+  {v:"2.46", t:"Neue Startseite: Diese-Tage-Bereich oben, ein Wartet-auf-dich-Feld für Nachfragen/Aufgaben/Abstimmungen, Events & Trips zusammengefasst"},
+  {v:"2.45", t:"Karte & Spot-Detail repariert, Navigieren-Button, Events ohne Dubletten"},
   {v:"2.44", t:"Aufgeräumte Kopfzeile, Feedback-Funktion & dieser Versionsverlauf"},
   {v:"2.42", t:"App per Einladungslink/Code freischalten (auch bei frischer Installation)"},
   {v:"2.41", t:"Neues Agraffe-Logo & kräftigere Pink/Creme-Farben"},
