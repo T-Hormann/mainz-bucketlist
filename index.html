@@ -464,7 +464,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.41";
+const APP_VERSION="2.42";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -2279,11 +2279,26 @@ function showProfilePicker(){
     profile=b.dataset.n; localStorage.setItem("ag-profile",profile); boot();
   });
 }
+function joinWithInput(){
+  const el=document.getElementById("join-input"); if(!el) return;
+  let v=(el.value||"").trim(); if(!v) return;
+  const m=v.match(/join=([^&\s]+)/);       // aus vollem Link den Code ziehen
+  if(m) v=decodeURIComponent(m[1]);
+  v=v.replace(/^#/,"").replace(/[\/\s]+$/,"").trim();
+  if(!v){ alert("Bitte den Einladungslink oder den Code eingeben."); return; }
+  try{ localStorage.setItem("ag-code", v); }catch(e){}
+  location.reload();
+}
 function showJoinNeeded(){
   const ov=document.getElementById("overlay");
-  ov.innerHTML=`<div class="logo">🔒</div><h2>Einladungslink nötig</h2>
-    <p>Diese App gehört zur Agraffen-Gruppe. Öffne den Einladungslink, den du per WhatsApp bekommen hast – damit schaltet sich die App frei.</p>`;
+  ov.innerHTML=`<div class="logo"><img src="icon-512.png" alt="" style="width:74px;height:74px;border-radius:18px"></div>
+    <h2>App freischalten</h2>
+    <p>Diese App gehört zur Agraffen-Gruppe. Füge deinen <b>Einladungslink</b> (oder den Code) ein, den du per WhatsApp bekommen hast.</p>
+    <input id="join-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Einladungslink oder Code…" style="width:min(340px,100%);padding:13px 15px;border:1px solid var(--line);border-radius:12px;font-size:15px;background:var(--card);color:var(--text);outline:none;margin-bottom:12px">
+    <button id="join-go" style="width:min(340px,100%);background:var(--bordeaux);color:#fff;border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">Freischalten</button>`;
   ov.classList.add("show");
+  const b=document.getElementById("join-go"); if(b) b.onclick=joinWithInput;
+  const inp=document.getElementById("join-input"); if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); joinWithInput(); } });
 }
 
 // ======== Boot ========
