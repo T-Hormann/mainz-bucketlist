@@ -327,6 +327,9 @@ main{padding:12px 14px 24px}
 .fl{display:block;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin:10px 0 4px}
 .finp{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 12px;font-size:15px;font-family:inherit;color:var(--text);background:var(--bg);box-sizing:border-box}
 textarea.finp{resize:vertical}
+/* Date/Time/Select füllen auf iOS/Safari sonst nicht die volle Breite */
+input.finp[type=date],input.finp[type=time]{-webkit-appearance:none;appearance:none;min-height:46px}
+select.finp{-webkit-appearance:none;appearance:none;padding-right:34px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%239A7E88' stroke-width='2' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 13px center}
 .spotmap{height:200px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-top:2px}
 .spot-hint{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:16px}
 .spot-actions{margin-top:10px}
@@ -511,7 +514,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.46";
+const APP_VERSION="2.47";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1314,7 +1317,15 @@ function renderTrips(){
   if(openTripId&&trips[openTripId]){ if(bar)bar.style.display="none"; renderTripDetail(trips[openTripId],openTripId,wrap,head); return; }
   if(bar)bar.style.display="";
   if(head)head.innerHTML=`<h2>Trips</h2><p>Ausflüge &amp; Wochenend-Trips planen</p>`;
-  const ids=Object.keys(trips).sort((a,b)=>(trips[b].created||0)-(trips[a].created||0));
+  const todayS=new Date().toISOString().slice(0,10);
+  const tripSortKey=(t)=>{ const fd=fixedDateObj(t); if(fd) return fd.end||fd.start; const ds=(t.dates||[]).map(d=>d.start).filter(Boolean).sort(); return ds[0]||"9999-99-99"; };
+  const ids=Object.keys(trips).sort((a,b)=>{
+    const ka=tripSortKey(trips[a]), kb=tripSortKey(trips[b]);
+    const pa=ka<todayS?1:0, pb=kb<todayS?1:0;           // vergangene nach unten
+    if(pa!==pb) return pa-pb;
+    if(pa) return kb.localeCompare(ka);                  // vergangene: neueste zuerst
+    return ka.localeCompare(kb);                         // kommende: nächste zuerst
+  });
   if(!ids.length){ wrap.innerHTML=`<div class="empty">Noch keine Trips.<br>Tippe auf „Neuer Trip", um den ersten Ausflug vorzuschlagen.</div>`; return; }
   let h="";
   ids.forEach(id=>{ const t=trips[id]; const fd=fixedDateObj(t); const ps=tParts(t);
@@ -1840,10 +1851,20 @@ function renderProfile(){
       </div>
       <p style="font-size:12px;color:var(--muted);margin-top:8px">Push aufs (auch gesperrte) Handy. iPhone: App zum Home-Bildschirm hinzufügen und einmal „Erlauben" tippen.</p>
     </div>`;
+    h+=`<div class="hcard"><h3>🔗 Freunde einladen</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 11px">Schick den anderen diesen Link. Sie öffnen ihn, wählen ihr Profil – fertig, alles ist synchron.</p>
+      <button class="kbtn" id="shareinvite" style="background:var(--bordeaux);color:#fff;border-color:var(--bordeaux)">Einladung teilen</button></div>`;
   }
   el.innerHTML=h;
   const bk=document.getElementById("pfback"); if(bk) bk.onclick=()=>{ profileView=null; setScreen("home"); };
   if(isMe){
+    const si=document.getElementById("shareinvite");
+    if(si) si.onclick=async()=>{
+      const link=location.origin+location.pathname+"#join="+encodeURIComponent(groupCode);
+      try{ if(navigator.share){ await navigator.share({title:"Agraffen App", text:"Komm in unsere Agraffen-App!", url:link}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+      try{ await navigator.clipboard.writeText(link); si.textContent="Link kopiert ✓"; setTimeout(()=>{si.textContent="Einladung teilen";},1800); }
+      catch(e){ prompt("Einladungslink zum Kopieren:", link); }
+    };
     const en=document.getElementById("nf-enabled");
     if(en) en.onchange=async()=>{ if(en.checked){ await enableNotifications(); } else { notifPrefs.enabled=false; await saveNotifPrefs(); } renderProfile(); };
     el.querySelectorAll("#nf-types input[data-nt]").forEach(c=>c.onchange=()=>{ notifPrefs[c.dataset.nt]=c.checked; saveNotifPrefs(); });
@@ -2102,6 +2123,7 @@ function updateAppbar(){
 }
 // ======== Feedback & Versionsverlauf ========
 const CHANGELOG=[
+  {v:"2.47", t:"Trips chronologisch sortiert, gleiche Feldbreiten im Event-Formular, Einladung-teilen-Button im Profil"},
   {v:"2.46", t:"Neue Startseite: Diese-Tage-Bereich oben, ein Wartet-auf-dich-Feld für Nachfragen/Aufgaben/Abstimmungen, Events & Trips zusammengefasst"},
   {v:"2.45", t:"Karte & Spot-Detail repariert, Navigieren-Button, Events ohne Dubletten"},
   {v:"2.44", t:"Aufgeräumte Kopfzeile, Feedback-Funktion & dieser Versionsverlauf"},
