@@ -34,6 +34,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:var(--bordeaux);letter-spacing:.3px}
 .brand .g{width:27px;height:27px;border-radius:7px;display:block;flex:0 0 auto}
 .agchip{background:var(--gold-soft);color:#7A5A12;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--gold-line)}
+.appbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.abtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:var(--text)}
+.abtn.prof{border:0;background:none}
+.abtn.prof .av{width:36px;height:36px;font-size:13px}
+.sheetov{position:fixed;inset:0;background:rgba(30,10,20,.45);z-index:120;display:none;align-items:flex-end;justify-content:center}
+.sheetov.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;max-height:86vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 18px calc(20px + env(safe-area-inset-bottom))}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sheet-h h3{font-size:18px;font-weight:700}
+.sheet-x{border:0;background:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:0 2px}
+.fb-hint{color:var(--muted);font-size:13.5px;line-height:1.45;margin-bottom:10px}
+#fb-text{width:100%;min-height:96px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14.5px;background:var(--card);color:var(--text);outline:none;resize:vertical;font-family:inherit}
+.fb-send{margin-top:10px;width:100%;background:var(--bordeaux);color:#fff;border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:700;cursor:pointer}
+.fb-ok{display:none;color:var(--green);font-size:13.5px;font-weight:600;margin-top:8px;text-align:center}
+.chlog{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}
+.chlog-h{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.chlog-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2)}
+.chlog-v{flex:0 0 auto;font-weight:700;color:var(--bordeaux);font-size:13px;width:42px;font-variant-numeric:tabular-nums}
+.chlog-t{font-size:13.5px;color:var(--text);line-height:1.4}
 .sync{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-top:2px}
 .sync .dot{width:7px;height:7px;border-radius:50%;background:#7ec9a0}
 .sync.off .dot{background:#e6c069}
@@ -369,11 +388,11 @@ textarea.finp{resize:vertical}
 <div id="ptr"><span class="spin"></span><span id="ptrtxt">Zum Aktualisieren ziehen</span></div>
 
 <div class="appbar">
-  <div>
-    <div class="brand"><img class="g" src="icon-512.png" alt=""> Agraffen</div>
-    <div class="sync" id="sync"><span class="dot"></span><span id="synctxt">verbinde…</span></div>
+  <div class="brand"><img class="g" src="icon-512.png" alt=""> Agraffen</div>
+  <div class="appbar-actions">
+    <button class="abtn" id="fbbtn" aria-label="Feedback & Neuigkeiten">💬</button>
+    <button class="abtn prof" id="hprofbtn" aria-label="Mein Profil"></button>
   </div>
-  <div class="agchip" id="agchip">0 Agraffen</div>
 </div>
 
 <section id="s-home" class="screen active"></section>
@@ -431,6 +450,7 @@ textarea.finp{resize:vertical}
 
 <div id="chat-upstat"></div>
 <div class="mediaov" id="mediaov"><button class="mclose" id="media-close">×</button><div id="media-body"></div></div>
+<div class="sheetov" id="fbov"><div class="sheet" id="fbbody"></div></div>
 
 <nav class="bottomnav" id="bottomnav">
   <button class="navbtn active" data-s="home"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/></svg><span class="lb">Home</span></button>
@@ -464,7 +484,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.42";
+const APP_VERSION="2.43";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1634,7 +1654,7 @@ function renderHome(){
   const groupTotal=Object.keys(groupIds).length;
   const rank=MEMBERS.map(n=>({n, c:doneCountOf(n)})).sort((a,b)=>b.c-a.c);
   let h="";
-  h+=`<div class="greet"><div class="greet-row"><div><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div><button class="profbtn" id="profbtn">${avatar(profile)} Mein Profil ›</button></div></div>`;
+  h+=`<div class="greet"><h2>Hallo ${profile} 👋</h2><p>Gemeinsam erlebt: ${groupTotal} / ${total} · du: ${mine}</p></div>`;
 
   // 1a) Offene Nachfragen (Event-Abstimmung)
   const nf=openNachfragen();
@@ -1996,7 +2016,48 @@ function renderMain(){
   });
 }
 function updateAppbar(){
-  const c=document.getElementById("agchip"); if(c) c.textContent=agraffenCount()+" Agraffen";
+  const p=document.getElementById("hprofbtn");
+  if(p){ p.innerHTML=avatar(profile); p.onclick=()=>openProfile(profile); }
+  const fb=document.getElementById("fbbtn"); if(fb) fb.onclick=openFeedback;
+}
+// ======== Feedback & Versionsverlauf ========
+const CHANGELOG=[
+  {v:"2.42", t:"App per Einladungslink/Code freischalten (auch bei frischer Installation)"},
+  {v:"2.41", t:"Neues Agraffe-Logo & kräftigere Pink/Creme-Farben"},
+  {v:"2.40", t:"Bilder & Videos im Chat (laufen nach 90 Tagen automatisch ab)"},
+  {v:"2.37", t:"Push-Benachrichtigungen: Nachricht, Aufgabe, Einladung, Abstimmung"},
+  {v:"2.35", t:"Eigene Events erstellen (z. B. Geburtstag)"},
+  {v:"2.32", t:"Bei Events „Wer kommt mit?“ + Nachfrage an die Gruppe"},
+  {v:"2.30", t:"Events-Tab mit echten Festen & Winzer-Events (automatisch aktualisiert)"},
+  {v:"2.20", t:"Gemeinsame Kasse: Ausgaben fair teilen"},
+  {v:"2.14", t:"Offline-Fähigkeit + Sprachnachrichten im Chat"},
+  {v:"2.10", t:"Profil & Statistiken, eigene Orte hinzufügen"},
+  {v:"2.00", t:"Bucket List, Bewertungen, Trip-Planer, Gruppen-Chat"}
+];
+function openFeedback(){
+  const ov=document.getElementById("fbov"), b=document.getElementById("fbbody"); if(!ov||!b) return;
+  const log=CHANGELOG.map(c=>`<div class="chlog-item"><div class="chlog-v">${c.v}</div><div class="chlog-t">${esc(c.t)}</div></div>`).join("");
+  b.innerHTML=`<div class="sheet-h"><h3>Feedback & Neuigkeiten</h3><button class="sheet-x" id="fb-x" aria-label="Schließen">×</button></div>
+    <p class="fb-hint">Fehler entdeckt oder eine Idee? Schreib's hier rein — wird ausgelesen und umgesetzt.</p>
+    <textarea id="fb-text" placeholder="Dein Feedback…"></textarea>
+    <button class="fb-send" id="fb-send">Absenden</button>
+    <div class="fb-ok" id="fb-ok">Danke! Dein Feedback ist angekommen. 🙌</div>
+    <div class="chlog"><div class="chlog-h">Was ist neu · aktuell v${APP_VERSION}</div>${log}</div>`;
+  ov.classList.add("on");
+  document.getElementById("fb-x").onclick=closeFeedback;
+  document.getElementById("fb-send").onclick=submitFeedback;
+  ov.onclick=e=>{ if(e.target===ov) closeFeedback(); };
+}
+function closeFeedback(){ const ov=document.getElementById("fbov"); if(ov) ov.classList.remove("on"); }
+async function submitFeedback(){
+  const t=document.getElementById("fb-text"); if(!t) return;
+  const txt=(t.value||"").trim(); if(!txt){ t.focus(); return; }
+  if(!(dbPath && cryptoKey && firebase.apps && firebase.apps.length)){ alert("Keine Verbindung – bitte später nochmal."); return; }
+  try{
+    await firebase.database().ref("groups/"+dbPath+"/feedback").push(await encryptObj(cryptoKey,{by:profile, text:txt, ts:Date.now(), ver:APP_VERSION}));
+    t.value="";
+    const ok=document.getElementById("fb-ok"); if(ok) ok.style.display="block";
+  }catch(e){ alert("Konnte nicht senden. Bitte nochmal versuchen."); }
 }
 function render(){
   if(screen==="bucket"){ renderTabs(); renderMain(); if(view==="karte"&&map) renderMap(); }
