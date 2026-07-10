@@ -53,6 +53,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .chlog-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2)}
 .chlog-v{flex:0 0 auto;font-weight:700;color:var(--bordeaux);font-size:13px;width:42px;font-variant-numeric:tabular-nums}
 .chlog-t{font-size:13.5px;color:var(--text);line-height:1.4}
+.fb-empty{font-size:13px;color:var(--muted);padding:6px 0}
+.fbi{padding:10px 0;border-bottom:1px solid var(--line2)}
+.fbi:last-child{border-bottom:0}
+.fbi-top{display:flex;align-items:center;gap:7px}
+.fbi-top .av{width:22px;height:22px;font-size:10px}
+.fbi-by{font-size:13px;font-weight:700;color:var(--text)}
+.fbi-d{font-size:11.5px;color:var(--muted)}
+.fbi-t{font-size:14px;color:var(--text);line-height:1.4;margin:5px 0 0 29px}
+.fbi-st{margin-left:auto;border:0;border-radius:999px;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.fbi-st.st-open{background:var(--gold-soft);color:#7A5A12}
+.fbi-st.st-wip{background:var(--bordeaux-soft);color:var(--bordeaux-dark)}
+.fbi-st.st-done{background:#DFF3E8;color:#1E7A4C}
 .sync{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-top:2px}
 .sync .dot{width:7px;height:7px;border-radius:50%;background:#7ec9a0}
 .sync.off .dot{background:#e6c069}
@@ -514,7 +526,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.47";
+const APP_VERSION="2.48";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -949,6 +961,7 @@ function initFirebase(){
   subscribeEventsRsvp(db);
   subscribeUserEvents(db);
   subscribeNotif(db);
+  subscribeFeedback(db);
 }
 let pushT=null;
 function pushMine(){
@@ -2123,6 +2136,7 @@ function updateAppbar(){
 }
 // ======== Feedback & Versionsverlauf ========
 const CHANGELOG=[
+  {v:"2.48", t:"Feedback-Board: eure Meldungen für alle sichtbar mit Status (offen/in Arbeit/erledigt), Neuigkeiten live"},
   {v:"2.47", t:"Trips chronologisch sortiert, gleiche Feldbreiten im Event-Formular, Einladung-teilen-Button im Profil"},
   {v:"2.46", t:"Neue Startseite: Diese-Tage-Bereich oben, ein Wartet-auf-dich-Feld für Nachfragen/Aufgaben/Abstimmungen, Events & Trips zusammengefasst"},
   {v:"2.45", t:"Karte & Spot-Detail repariert, Navigieren-Button, Events ohne Dubletten"},
@@ -2139,18 +2153,67 @@ const CHANGELOG=[
   {v:"2.10", t:"Profil & Statistiken, eigene Orte hinzufügen"},
   {v:"2.00", t:"Bucket List, Bewertungen, Trip-Planer, Gruppen-Chat"}
 ];
-function openFeedback(){
-  const ov=document.getElementById("fbov"), b=document.getElementById("fbbody"); if(!ov||!b) return;
-  const log=CHANGELOG.map(c=>`<div class="chlog-item"><div class="chlog-v">${c.v}</div><div class="chlog-t">${esc(c.t)}</div></div>`).join("");
+// Live-Feedback-Board (für alle sichtbar) + Neuigkeiten aus Firebase
+let feedbackRef=null, feedbackMetaRef=null, updatesRef=null;
+let feedbackList={}, feedbackMeta={}, liveUpdates={};
+const FB_STATUS={ open:{label:"offen", cls:"st-open", ic:"🕓"}, wip:{label:"in Arbeit", cls:"st-wip", ic:"🔧"}, done:{label:"erledigt", cls:"st-done", ic:"✅"} };
+function isFeedbackOpen(){ const ov=document.getElementById("fbov"); return !!(ov&&ov.classList.contains("on")); }
+function subscribeFeedback(db){
+  feedbackRef=db.ref("groups/"+dbPath+"/feedback");
+  feedbackRef.on("value", async snap=>{
+    const v=snap.val()||{}; const nx={};
+    for(const k in v){ const d=await decryptObj(cryptoKey,v[k]); if(d) nx[k]=d; }
+    feedbackList=nx; if(isFeedbackOpen()) renderFeedback();
+  }, e=>{});
+  feedbackMetaRef=db.ref("groups/"+dbPath+"/feedback_meta");
+  feedbackMetaRef.on("value", snap=>{ feedbackMeta=snap.val()||{}; if(isFeedbackOpen()) renderFeedback(); }, e=>{});
+  updatesRef=db.ref("groups/"+dbPath+"/updates");
+  updatesRef.on("value", snap=>{ liveUpdates=snap.val()||{}; if(isFeedbackOpen()) renderFeedback(); }, e=>{});
+}
+async function cycleFeedbackStatus(key){
+  if(!feedbackMetaRef) return;
+  const cur=(feedbackMeta[key]&&feedbackMeta[key].status)||"open";
+  const order=["open","wip","done"]; const next=order[(order.indexOf(cur)+1)%order.length];
+  const meta={status:next, ts:Date.now(), by:profile}; if(next==="done") meta.ver=APP_VERSION;
+  try{ await feedbackMetaRef.child(key).set(meta); }catch(e){}
+  try{
+    if(next==="done"){ const fb=feedbackList[key]; if(fb&&updatesRef) await updatesRef.child("fb_"+key).set({v:APP_VERSION, t:fb.text, ts:Date.now()}); }
+    else if(updatesRef){ await updatesRef.child("fb_"+key).remove(); }
+  }catch(e){}
+}
+function fbDate(ts){ try{return new Date(ts).toLocaleDateString("de-DE",{day:"numeric",month:"short"});}catch(e){return "";} }
+function feedbackRows(){
+  const keys=Object.keys(feedbackList).sort((a,b)=>(feedbackList[b].ts||0)-(feedbackList[a].ts||0));
+  if(!keys.length) return `<div class="fb-empty">Noch keine Meldungen – schreib die erste Idee rein. 💡</div>`;
+  return keys.map(k=>{
+    const f=feedbackList[k]; const st=(feedbackMeta[k]&&feedbackMeta[k].status)||"open"; const S=FB_STATUS[st]||FB_STATUS.open;
+    const ver=(st==="done"&&feedbackMeta[k]&&feedbackMeta[k].ver)?" · v"+feedbackMeta[k].ver:"";
+    return `<div class="fbi"><div class="fbi-top">${avatar(f.by||"?")}<span class="fbi-by">${esc(f.by||"?")}</span><span class="fbi-d">${fbDate(f.ts)}</span><button class="fbi-st ${S.cls}" data-fbk="${k}">${S.ic} ${S.label}${ver}</button></div><div class="fbi-t">${esc(f.text||"")}</div></div>`;
+  }).join("");
+}
+function updatesRows(){
+  const live=Object.keys(liveUpdates).map(k=>liveUpdates[k]).filter(u=>u&&u.t).sort((a,b)=>(b.ts||0)-(a.ts||0)).map(u=>({v:u.v||"",t:u.t}));
+  return live.concat(CHANGELOG).map(c=>`<div class="chlog-item"><div class="chlog-v">${esc(c.v)}</div><div class="chlog-t">${esc(c.t)}</div></div>`).join("");
+}
+function renderFeedback(){
+  const b=document.getElementById("fbbody"); if(!b) return;
+  const prev=document.getElementById("fb-text"); const draft=prev?prev.value:"";
   b.innerHTML=`<div class="sheet-h"><h3>Feedback & Neuigkeiten</h3><button class="sheet-x" id="fb-x" aria-label="Schließen">×</button></div>
-    <p class="fb-hint">Fehler entdeckt oder eine Idee? Schreib's hier rein — wird ausgelesen und umgesetzt.</p>
+    <p class="fb-hint">Fehler entdeckt oder eine Idee? Schreib's hier rein – alle sehen den Stand (offen → in Arbeit → erledigt).</p>
     <textarea id="fb-text" placeholder="Dein Feedback…"></textarea>
     <button class="fb-send" id="fb-send">Absenden</button>
     <div class="fb-ok" id="fb-ok">Danke! Dein Feedback ist angekommen. 🙌</div>
-    <div class="chlog"><div class="chlog-h">Was ist neu · aktuell v${APP_VERSION}</div>${log}</div>`;
-  ov.classList.add("on");
+    <div class="chlog"><div class="chlog-h">Eure Meldungen</div>${feedbackRows()}</div>
+    <div class="chlog"><div class="chlog-h">Was ist neu · aktuell v${APP_VERSION}</div>${updatesRows()}</div>`;
+  const ta=document.getElementById("fb-text"); if(ta&&draft) ta.value=draft;
   document.getElementById("fb-x").onclick=closeFeedback;
   document.getElementById("fb-send").onclick=submitFeedback;
+  b.querySelectorAll(".fbi-st[data-fbk]").forEach(x=>x.onclick=()=>cycleFeedbackStatus(x.dataset.fbk));
+}
+function openFeedback(){
+  const ov=document.getElementById("fbov"); if(!ov) return;
+  renderFeedback();
+  ov.classList.add("on");
   ov.onclick=e=>{ if(e.target===ov) closeFeedback(); };
 }
 function closeFeedback(){ const ov=document.getElementById("fbov"); if(ov) ov.classList.remove("on"); }
