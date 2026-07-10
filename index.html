@@ -149,6 +149,10 @@ main{padding:12px 14px 24px}
 .ev-head h2{font-size:20px;font-weight:700}
 .ev-head p{font-size:13px;color:var(--muted);margin-top:2px}
 #eventswrap{padding:8px 14px 24px}
+#ev-filter{display:flex;gap:8px;overflow-x:auto;padding:11px 14px 3px;-webkit-overflow-scrolling:touch}
+#ev-filter::-webkit-scrollbar{display:none}
+.evfch{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.evfch.on{background:var(--bordeaux);color:#fff;border-color:var(--bordeaux)}
 .ev-day{font-size:13px;font-weight:700;color:var(--bordeaux);margin:16px 2px 8px}
 .ev-card{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;text-decoration:none;color:var(--text);cursor:pointer}
 .ev-time{font-size:13px;font-weight:700;color:var(--bordeaux);min-width:44px;font-variant-numeric:tabular-nums}
@@ -462,6 +466,7 @@ select.finp{-webkit-appearance:none;appearance:none;padding-right:34px;backgroun
 <section id="s-events" class="screen">
   <div class="ev-head"><h2>Events</h2><p>Mainz, Wiesbaden &amp; Rheinhessen</p></div>
   <div style="padding:2px 14px 0"><button class="cta" id="neweventbtn" style="margin:6px 0 0;width:100%"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Eigenes Event erstellen</button></div>
+  <div id="ev-filter"></div>
   <div id="eventswrap"></div>
 </section>
 
@@ -526,7 +531,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.48";
+const APP_VERSION="2.49";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1548,10 +1553,35 @@ async function submitUserEvent(){
 function fmtD(iso){ try{return new Date(iso).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});}catch(e){return iso;} }
 function fmtT(iso){ try{return new Date(iso).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";} }
 function evSearch(e){ return "https://www.google.com/search?q="+encodeURIComponent(e.name+" "+(e.venue||"")+" "+(e.city||"")); }
+let eventFilter="__all__";
+const EV_GROUPS={ kino:{label:"Kino",emoji:"🎬"}, wein:{label:"Wein",emoji:"🍷"}, kultur:{label:"Kultur",emoji:"🎭"}, eigene:{label:"Eigene",emoji:"🎉"}, sonst:{label:"Sonstiges",emoji:"📌"} };
+function evGroup(e){
+  if(e.custom) return "eigene";
+  const c=(e.cat||"").toLowerCase();
+  if(c.includes("kino")) return "kino";
+  if(c.includes("wein")||c.includes("hoffest")||c.includes("winzer")||c.includes("schobbe")) return "wein";
+  if(c.includes("kultur")||c.includes("stadt")) return "kultur";
+  return "sonst";
+}
 function renderEvents(){
   const wrap=document.getElementById("eventswrap"); if(!wrap)return;
-  const up=upcomingEvents();
-  if(!up.length){ wrap.innerHTML=`<div class="empty">Noch keine Events geladen.<br>Der wöchentliche Import füllt das automatisch.</div>`; return; }
+  const all=upcomingEvents();
+  // Filterleiste aus den vorhandenen Kategorien
+  const order=["kino","wein","kultur","eigene","sonst"];
+  const present={}; all.forEach(e=>present[evGroup(e)]=1);
+  const groups=order.filter(g=>present[g]);
+  if(eventFilter!=="__all__" && !groups.includes(eventFilter)) eventFilter="__all__";
+  const fbar=document.getElementById("ev-filter");
+  if(fbar){
+    if(groups.length>1){
+      let chips=`<button class="evfch ${eventFilter==="__all__"?"on":""}" data-g="__all__">Alle</button>`;
+      chips+=groups.map(g=>`<button class="evfch ${eventFilter===g?"on":""}" data-g="${g}">${EV_GROUPS[g].emoji} ${EV_GROUPS[g].label}</button>`).join("");
+      fbar.innerHTML=chips; fbar.style.display="flex";
+      fbar.querySelectorAll(".evfch[data-g]").forEach(b=>b.onclick=()=>{ eventFilter=b.dataset.g; renderEvents(); });
+    } else { fbar.innerHTML=""; fbar.style.display="none"; }
+  }
+  const up = eventFilter==="__all__" ? all : all.filter(e=>evGroup(e)===eventFilter);
+  if(!up.length){ wrap.innerHTML=`<div class="empty">${all.length?"Keine Events in dieser Kategorie.":"Noch keine Events geladen.<br>Der wöchentliche Import füllt das automatisch."}</div>`; return; }
   let h="", lastDay="";
   up.forEach((e,i)=>{
     const day=fmtD(e.start);
@@ -2136,6 +2166,7 @@ function updateAppbar(){
 }
 // ======== Feedback & Versionsverlauf ========
 const CHANGELOG=[
+  {v:"2.49", t:"Open-Air-Kinos im Events-Tab (SCHIFF Wiesbaden, Bilderwerfer, Freiluftkino Zitadelle) + Kategorie-Filter (Kino/Wein/Kultur/Eigene)"},
   {v:"2.48", t:"Feedback-Board: eure Meldungen für alle sichtbar mit Status (offen/in Arbeit/erledigt), Neuigkeiten live"},
   {v:"2.47", t:"Trips chronologisch sortiert, gleiche Feldbreiten im Event-Formular, Einladung-teilen-Button im Profil"},
   {v:"2.46", t:"Neue Startseite: Diese-Tage-Bereich oben, ein Wartet-auf-dich-Feld für Nachfragen/Aufgaben/Abstimmungen, Events & Trips zusammengefasst"},
