@@ -1,62 +1,20 @@
 {
-  "updated": "2026-07-20",
+  "updated": "2026-07-27",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
       "name": "Öffentliche Führung \"Kellerlabyrinth Oppenheim\"",
-      "start": "2026-07-22T13:30:00",
+      "start": "2026-07-29T13:30:00",
       "venue": "",
       "city": "",
       "cat": "Stadt & Kultur"
     },
     {
       "name": "After Work Schobbe",
-      "start": "2026-07-22T18:00:00",
+      "start": "2026-07-29T18:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinlounge"
-    },
-    {
-      "name": "Wine Pop Up Mainz",
-      "start": "2026-07-23T17:00:00",
-      "venue": "Kulturei an der Zitadelle",
-      "city": "Mainz",
-      "cat": "Weinfest"
-    },
-    {
-      "name": "Nackenheimer Weinfest",
-      "start": "2026-07-24T17:00:00",
-      "venue": "Ortsmitte Nackenheim",
-      "city": "Nackenheim",
-      "cat": "Weinfest"
-    },
-    {
-      "name": "\"Schobbergass\" - Schobbe in der Obergass'",
-      "start": "2026-07-24T17:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "Stückfass Weinwissen und Weinprobe",
-      "start": "2026-07-24T18:30:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinprobe"
-    },
-    {
-      "name": "Wein- und Kräuterwanderung am Roten Hang",
-      "start": "2026-07-25T12:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinwanderung"
-    },
-    {
-      "name": "KulturSINN | Sommermatinée",
-      "start": "2026-07-26T11:30:00",
-      "venue": "",
-      "city": "",
-      "cat": "Stadt & Kultur"
     },
     {
       "name": "Große Qualitäts-Weinprobe zur Einstimmung auf das Niersteiner Winzerfest",
@@ -186,6 +144,34 @@
       "venue": "",
       "city": "",
       "cat": "Weinfest"
+    },
+    {
+      "name": "Kellerweg-Fest in Guntersblum",
+      "start": "2026-08-21T17:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Hoffest im Weingut Karl Jung & Sohn",
+      "start": "2026-08-22T11:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Hoffest"
+    },
+    {
+      "name": "30. Internationales Kulturfest in Nierstein",
+      "start": "2026-08-23T15:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "Wein-Gourmet-Musik | Erlebnis-Abend",
+      "start": "2026-08-26T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
     },
     {
       "name": "Mainzer Weinmarkt (1. Wochenende)",
