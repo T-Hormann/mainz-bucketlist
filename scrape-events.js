@@ -115,7 +115,7 @@ async function fetchText(url){
 
     let merged=[...map.values()].filter(e=>{
       const d=new Date(e.start); return d>=now && d<=limit;
-    }).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,40);
+    }).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,60);
 
     // Sicherheitsnetz: wenn nach dem Merge fast nichts übrig ist, nichts überschreiben
     if(merged.length < 3){
