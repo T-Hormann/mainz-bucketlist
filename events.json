@@ -31,6 +31,38 @@
       "cat": "Weinfest"
     },
     {
+      "name": "Niersteiner Winzerfest",
+      "start": "2026-08-01T16:00:00",
+      "venue": "Marktplatz, Fronhof & Tempelhof",
+      "city": "Nierstein",
+      "cat": "Weinfest",
+      "desc": "Winzerfest am Roten Hang (31.7.–3.8.) · vier Tage Wein, Musik & Tanz an Marktplatz, Fronhof und Tempelhof."
+    },
+    {
+      "name": "Mainzer Weinsalon – After-Work-Weinbar",
+      "start": "2026-08-01T17:00:00",
+      "venue": "Mainz (Innenstadt)",
+      "city": "Mainz",
+      "cat": "Weinlounge",
+      "desc": "Offene After-Work-Weinbar mit Rheinhessen-Weinen mitten in Mainz."
+    },
+    {
+      "name": "Niersteiner Winzerfest",
+      "start": "2026-08-02T11:30:00",
+      "venue": "Marktplatz, Fronhof & Tempelhof",
+      "city": "Nierstein",
+      "cat": "Weinfest",
+      "desc": "Winzerfest am Roten Hang (31.7.–3.8.) · Sonntag mit Frühschoppen, Wein & Musik."
+    },
+    {
+      "name": "Niersteiner Winzerfest (Abschluss)",
+      "start": "2026-08-03T17:00:00",
+      "venue": "Marktplatz, Fronhof & Tempelhof",
+      "city": "Nierstein",
+      "cat": "Weinfest",
+      "desc": "Letzter Tag des Winzerfests am Roten Hang (31.7.–3.8.)."
+    },
+    {
       "name": "SCHIFF Open-Air-Kino: Ach, diese Lücke, diese entsetzliche Lücke",
       "start": "2026-08-06T20:30:00",
       "venue": "Schiersteiner Hafen",
