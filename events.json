@@ -1,58 +1,13 @@
 {
-  "updated": "2026-07-27",
-  "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer) + Open-Air-Kinos (SCHIFF, FILMZ)",
+  "updated": "2026-08-03",
+  "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
-      "name": "Öffentliche Führung \"Kellerlabyrinth Oppenheim\"",
-      "start": "2026-07-29T13:30:00",
-      "venue": "",
-      "city": "",
-      "cat": "Stadt & Kultur"
-    },
-    {
-      "name": "After Work Schobbe",
-      "start": "2026-07-29T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "Große Qualitäts-Weinprobe zur Einstimmung auf das Niersteiner Winzerfest",
-      "start": "2026-07-30T19:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinprobe"
-    },
-    {
       "name": "Niersteiner Winzerfest",
-      "start": "2026-07-31T17:00:00",
+      "start": "2026-08-03T11:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinfest"
-    },
-    {
-      "name": "Niersteiner Winzerfest",
-      "start": "2026-08-01T16:00:00",
-      "venue": "Marktplatz, Fronhof & Tempelhof",
-      "city": "Nierstein",
-      "cat": "Weinfest",
-      "desc": "Winzerfest am Roten Hang (31.7.–3.8.) · vier Tage Wein, Musik & Tanz an Marktplatz, Fronhof und Tempelhof."
-    },
-    {
-      "name": "Mainzer Weinsalon – After-Work-Weinbar",
-      "start": "2026-08-01T17:00:00",
-      "venue": "Mainz (Innenstadt)",
-      "city": "Mainz",
-      "cat": "Weinlounge",
-      "desc": "Offene After-Work-Weinbar mit Rheinhessen-Weinen mitten in Mainz."
-    },
-    {
-      "name": "Niersteiner Winzerfest",
-      "start": "2026-08-02T11:30:00",
-      "venue": "Marktplatz, Fronhof & Tempelhof",
-      "city": "Nierstein",
-      "cat": "Weinfest",
-      "desc": "Winzerfest am Roten Hang (31.7.–3.8.) · Sonntag mit Frühschoppen, Wein & Musik."
     },
     {
       "name": "Niersteiner Winzerfest (Abschluss)",
@@ -61,6 +16,13 @@
       "city": "Nierstein",
       "cat": "Weinfest",
       "desc": "Letzter Tag des Winzerfests am Roten Hang (31.7.–3.8.)."
+    },
+    {
+      "name": "After Work Schobbe",
+      "start": "2026-08-05T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
     },
     {
       "name": "SCHIFF Open-Air-Kino: Ach, diese Lücke, diese entsetzliche Lücke",
@@ -151,6 +113,13 @@
     {
       "name": "Weinbergsrundfahrt",
       "start": "2026-08-15T13:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "350 Jahre Weingut Stauss",
+      "start": "2026-08-15T15:00:00",
       "venue": "",
       "city": "",
       "cat": "Wein-Event"
@@ -250,6 +219,13 @@
       "city": "Mainz",
       "cat": "Open-Air-Kino",
       "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
+    },
+    {
+      "name": "Herbstfarben in der Vinothek Jakob Gerhardt",
+      "start": "2026-09-01T15:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
     },
     {
       "name": "Freiluftkino: Appropriate Behavior (2014, OmU)",
