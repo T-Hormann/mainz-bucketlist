@@ -1,67 +1,13 @@
 {
-  "updated": "2026-08-03",
+  "updated": "2026-08-10",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
-      "name": "Niersteiner Winzerfest",
-      "start": "2026-08-03T11:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinfest"
-    },
-    {
-      "name": "Niersteiner Winzerfest (Abschluss)",
-      "start": "2026-08-03T17:00:00",
-      "venue": "Marktplatz, Fronhof & Tempelhof",
-      "city": "Nierstein",
-      "cat": "Weinfest",
-      "desc": "Letzter Tag des Winzerfests am Roten Hang (31.7.–3.8.)."
-    },
-    {
-      "name": "After Work Schobbe",
-      "start": "2026-08-05T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Ach, diese Lücke, diese entsetzliche Lücke",
-      "start": "2026-08-06T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
       "name": "Oppenheimer Weinfest",
-      "start": "2026-08-07T19:30:00",
+      "start": "2026-08-10T18:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinfest"
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Michael",
-      "start": "2026-08-07T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Der Teufel trägt Prada 2",
-      "start": "2026-08-08T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: European Outdoor Film Tour",
-      "start": "2026-08-09T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
     },
     {
       "name": "SCHIFF Open-Air-Kino: Extrawurst",
@@ -145,6 +91,13 @@
       "venue": "",
       "city": "",
       "cat": "Weinfest"
+    },
+    {
+      "name": "After Work Schobbe",
+      "start": "2026-08-19T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
     },
     {
       "name": "Kellerweg-Fest in Guntersblum",
@@ -265,6 +218,20 @@
       "city": "Mainz",
       "cat": "Open-Air-Kino",
       "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
+    },
+    {
+      "name": "Wein-Wochenende",
+      "start": "2026-09-05T11:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "KaffeeKlatsch | WinzerCafé im Weingut Jürgen Bernhard",
+      "start": "2026-09-05T14:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
     },
     {
       "name": "Freiluftkino: Palästina 36 (2025, OmU)",
