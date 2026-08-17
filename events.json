@@ -1,97 +1,7 @@
 {
-  "updated": "2026-08-10",
+  "updated": "2026-08-17",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
-    {
-      "name": "Oppenheimer Weinfest",
-      "start": "2026-08-10T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinfest"
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Extrawurst",
-      "start": "2026-08-10T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Star Wars – The Mandalorian and Grogu",
-      "start": "2026-08-11T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Steckerlfischfiasko",
-      "start": "2026-08-12T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: One Battle After Another",
-      "start": "2026-08-13T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
-      "start": "2026-08-14T16:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinmarkt"
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Minions & Monster",
-      "start": "2026-08-14T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "Weinbergsrundfahrt",
-      "start": "2026-08-15T13:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Wein-Event"
-    },
-    {
-      "name": "350 Jahre Weingut Stauss",
-      "start": "2026-08-15T15:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Wein-Event"
-    },
-    {
-      "name": "Wein- und Käseabend",
-      "start": "2026-08-15T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Wein-Event"
-    },
-    {
-      "name": "SCHIFF Open-Air-Kino: Mamma Mia!",
-      "start": "2026-08-15T20:30:00",
-      "venue": "Schiersteiner Hafen",
-      "city": "Wiesbaden",
-      "cat": "Open-Air-Kino",
-      "desc": "SCHIFF Open-Air-Kino am Hafen · Einlass ab 19:30, Filmstart 20:30. Tickets über schiffestival.com."
-    },
-    {
-      "name": "Römerfest Nierstein",
-      "start": "2026-08-16T10:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinfest"
-    },
     {
       "name": "After Work Schobbe",
       "start": "2026-08-19T18:00:00",
@@ -133,6 +43,13 @@
       "venue": "Stadtpark & Volkspark",
       "city": "Mainz",
       "cat": "Weinfest"
+    },
+    {
+      "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
+      "start": "2026-08-27T16:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinmarkt"
     },
     {
       "name": "Wine Pop Up Mainz",
@@ -250,11 +167,32 @@
       "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
     },
     {
+      "name": "Kerb im Weingut",
+      "start": "2026-09-11T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinfest"
+    },
+    {
+      "name": "Long Opening Vinothek",
+      "start": "2026-09-12T12:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
+    },
+    {
       "name": "HIESTAND's Wein & Wandern",
       "start": "2026-09-12T14:00:00",
       "venue": "HIESTAND Weingut & Hofbrennerei",
       "city": "Guntersblum",
       "cat": "Weinwanderung"
+    },
+    {
+      "name": "HIESTAND´s Wein & Wandern",
+      "start": "2026-09-12T14:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
     }
   ]
 }
