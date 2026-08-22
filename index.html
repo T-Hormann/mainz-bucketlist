@@ -61,7 +61,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .fbi-by{font-size:13px;font-weight:700;color:var(--text)}
 .fbi-d{font-size:11.5px;color:var(--muted)}
 .fbi-t{font-size:14px;color:var(--text);line-height:1.4;margin:5px 0 0 29px}
-.fbi-st{margin-left:auto;border:0;border-radius:999px;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.fbi-st{margin-left:auto;display:inline-block;border:0;border-radius:999px;font-size:11px;font-weight:700;padding:4px 10px;white-space:nowrap}
 .fbi-st.st-open{background:var(--gold-soft);color:#7A5A12}
 .fbi-st.st-wip{background:var(--bordeaux-soft);color:var(--bordeaux-dark)}
 .fbi-st.st-done{background:#DFF3E8;color:#1E7A4C}
@@ -531,7 +531,7 @@ const firebaseConfig = {
   appId: "1:659070779963:web:b57baebb52fb8daa26121e"
 };
 
-const APP_VERSION="2.49";
+const APP_VERSION="2.50";
 const CATS = {
   aktivitaet:{label:"Aktivitäten",emoji:"🎯"},
   kultur:{label:"Kultur & Sehenswürdigkeiten",emoji:"🏛️"},
@@ -1897,6 +1897,9 @@ function renderProfile(){
     h+=`<div class="hcard"><h3>🔗 Freunde einladen</h3>
       <p style="font-size:13px;color:var(--muted);margin:0 0 11px">Schick den anderen diesen Link. Sie öffnen ihn, wählen ihr Profil – fertig, alles ist synchron.</p>
       <button class="kbtn" id="shareinvite" style="background:var(--bordeaux);color:#fff;border-color:var(--bordeaux)">Einladung teilen</button></div>`;
+    h+=`<div class="hcard"><h3>🧹 Verwaltung</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 11px">Löscht <b>alle</b> Chat-Nachrichten der Gruppe – für alle, endgültig. Praktisch, um vor dem Start sauber zu machen.</p>
+      <button class="kbtn" id="clearchat" style="border-color:var(--red);color:var(--red)">Chat leeren</button></div>`;
   }
   el.innerHTML=h;
   const bk=document.getElementById("pfback"); if(bk) bk.onclick=()=>{ profileView=null; setScreen("home"); };
@@ -1911,6 +1914,14 @@ function renderProfile(){
     const en=document.getElementById("nf-enabled");
     if(en) en.onchange=async()=>{ if(en.checked){ await enableNotifications(); } else { notifPrefs.enabled=false; await saveNotifPrefs(); } renderProfile(); };
     el.querySelectorAll("#nf-types input[data-nt]").forEach(c=>c.onchange=()=>{ notifPrefs[c.dataset.nt]=c.checked; saveNotifPrefs(); });
+    const cc=document.getElementById("clearchat");
+    if(cc) cc.onclick=async()=>{
+      if(!confirm("Wirklich ALLE Chat-Nachrichten der Gruppe löschen? Das lässt sich nicht rückgängig machen.")) return;
+      if(!chatRef){ alert("Keine Verbindung – bitte kurz später erneut."); return; }
+      cc.disabled=true; cc.textContent="Wird geleert…";
+      try{ await chatRef.remove(); cc.textContent="Chat geleert ✓"; setTimeout(()=>{cc.disabled=false;cc.textContent="Chat leeren";},2000); }
+      catch(e){ cc.disabled=false; cc.textContent="Chat leeren"; alert("Konnte nicht leeren. Bitte nochmal versuchen."); }
+    };
   }
 }
 // ======== Benachrichtigungs-Einstellungen ========
@@ -2166,6 +2177,7 @@ function updateAppbar(){
 }
 // ======== Feedback & Versionsverlauf ========
 const CHANGELOG=[
+  {v:"2.50", t:"„Chat leeren“ im Profil; Feedback-Status nur noch offen/erledigt (nicht mehr umstellbar); Events aktuell"},
   {v:"2.49", t:"Open-Air-Kinos im Events-Tab (SCHIFF Wiesbaden, Bilderwerfer, Freiluftkino Zitadelle) + Kategorie-Filter (Kino/Wein/Kultur/Eigene)"},
   {v:"2.48", t:"Feedback-Board: eure Meldungen für alle sichtbar mit Status (offen/in Arbeit/erledigt), Neuigkeiten live"},
   {v:"2.47", t:"Trips chronologisch sortiert, gleiche Feldbreiten im Event-Formular, Einladung-teilen-Button im Profil"},
@@ -2201,17 +2213,6 @@ function subscribeFeedback(db){
   updatesRef=db.ref("groups/"+dbPath+"/updates");
   updatesRef.on("value", snap=>{ liveUpdates=snap.val()||{}; if(isFeedbackOpen()) renderFeedback(); }, e=>{});
 }
-async function cycleFeedbackStatus(key){
-  if(!feedbackMetaRef) return;
-  const cur=(feedbackMeta[key]&&feedbackMeta[key].status)||"open";
-  const order=["open","wip","done"]; const next=order[(order.indexOf(cur)+1)%order.length];
-  const meta={status:next, ts:Date.now(), by:profile}; if(next==="done") meta.ver=APP_VERSION;
-  try{ await feedbackMetaRef.child(key).set(meta); }catch(e){}
-  try{
-    if(next==="done"){ const fb=feedbackList[key]; if(fb&&updatesRef) await updatesRef.child("fb_"+key).set({v:APP_VERSION, t:fb.text, ts:Date.now()}); }
-    else if(updatesRef){ await updatesRef.child("fb_"+key).remove(); }
-  }catch(e){}
-}
 function fbDate(ts){ try{return new Date(ts).toLocaleDateString("de-DE",{day:"numeric",month:"short"});}catch(e){return "";} }
 function feedbackRows(){
   const keys=Object.keys(feedbackList).sort((a,b)=>(feedbackList[b].ts||0)-(feedbackList[a].ts||0));
@@ -2219,7 +2220,7 @@ function feedbackRows(){
   return keys.map(k=>{
     const f=feedbackList[k]; const st=(feedbackMeta[k]&&feedbackMeta[k].status)||"open"; const S=FB_STATUS[st]||FB_STATUS.open;
     const ver=(st==="done"&&feedbackMeta[k]&&feedbackMeta[k].ver)?" · v"+feedbackMeta[k].ver:"";
-    return `<div class="fbi"><div class="fbi-top">${avatar(f.by||"?")}<span class="fbi-by">${esc(f.by||"?")}</span><span class="fbi-d">${fbDate(f.ts)}</span><button class="fbi-st ${S.cls}" data-fbk="${k}">${S.ic} ${S.label}${ver}</button></div><div class="fbi-t">${esc(f.text||"")}</div></div>`;
+    return `<div class="fbi"><div class="fbi-top">${avatar(f.by||"?")}<span class="fbi-by">${esc(f.by||"?")}</span><span class="fbi-d">${fbDate(f.ts)}</span><span class="fbi-st ${S.cls}">${S.ic} ${S.label}${ver}</span></div><div class="fbi-t">${esc(f.text||"")}</div></div>`;
   }).join("");
 }
 function updatesRows(){
@@ -2230,7 +2231,7 @@ function renderFeedback(){
   const b=document.getElementById("fbbody"); if(!b) return;
   const prev=document.getElementById("fb-text"); const draft=prev?prev.value:"";
   b.innerHTML=`<div class="sheet-h"><h3>Feedback & Neuigkeiten</h3><button class="sheet-x" id="fb-x" aria-label="Schließen">×</button></div>
-    <p class="fb-hint">Fehler entdeckt oder eine Idee? Schreib's hier rein – alle sehen den Stand (offen → in Arbeit → erledigt).</p>
+    <p class="fb-hint">Fehler entdeckt oder eine Idee? Schreib's hier rein. Deine Meldung steht auf „offen", bis wir sie umgesetzt haben – dann auf „erledigt".</p>
     <textarea id="fb-text" placeholder="Dein Feedback…"></textarea>
     <button class="fb-send" id="fb-send">Absenden</button>
     <div class="fb-ok" id="fb-ok">Danke! Dein Feedback ist angekommen. 🙌</div>
@@ -2239,7 +2240,6 @@ function renderFeedback(){
   const ta=document.getElementById("fb-text"); if(ta&&draft) ta.value=draft;
   document.getElementById("fb-x").onclick=closeFeedback;
   document.getElementById("fb-send").onclick=submitFeedback;
-  b.querySelectorAll(".fbi-st[data-fbk]").forEach(x=>x.onclick=()=>cycleFeedbackStatus(x.dataset.fbk));
 }
 function openFeedback(){
   const ov=document.getElementById("fbov"); if(!ov) return;
