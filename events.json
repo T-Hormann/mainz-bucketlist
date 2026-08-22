@@ -1,27 +1,27 @@
 {
-  "updated": "2026-08-17",
+  "updated": "2026-08-22",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
-    {
-      "name": "After Work Schobbe",
-      "start": "2026-08-19T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "Kellerweg-Fest in Guntersblum",
-      "start": "2026-08-21T17:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinfest"
-    },
     {
       "name": "Hoffest im Weingut Karl Jung & Sohn",
       "start": "2026-08-22T11:00:00",
       "venue": "",
       "city": "",
       "cat": "Hoffest"
+    },
+    {
+      "name": "Öffentliche Führung \"Kellerlabyrinth Oppenheim\"",
+      "start": "2026-08-22T12:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "Kellerweg-Fest in Guntersblum",
+      "start": "2026-08-22T17:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinfest"
     },
     {
       "name": "30. Internationales Kulturfest in Nierstein",
@@ -36,6 +36,13 @@
       "venue": "",
       "city": "",
       "cat": "Wein-Event"
+    },
+    {
+      "name": "After Work Schobbe",
+      "start": "2026-08-26T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinlounge"
     },
     {
       "name": "Mainzer Weinmarkt (1. Wochenende)",
