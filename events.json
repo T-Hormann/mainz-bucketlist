@@ -1,97 +1,20 @@
 {
-  "updated": "2026-08-31",
+  "updated": "2026-09-07",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
-      "name": "Freiluftkino: Little Miss Sunshine (2006, OmU)",
-      "start": "2026-08-31T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
       "name": "Herbstfarben in der Vinothek Jakob Gerhardt",
-      "start": "2026-09-01T15:00:00",
+      "start": "2026-09-07T15:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinlounge"
     },
     {
-      "name": "Freiluftkino: Appropriate Behavior (2014, OmU)",
-      "start": "2026-09-01T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
       "name": "Öffentliche Führung \"Kellerlabyrinth Oppenheim\"",
-      "start": "2026-09-02T13:30:00",
+      "start": "2026-09-09T13:30:00",
       "venue": "",
       "city": "",
       "cat": "Stadt & Kultur"
-    },
-    {
-      "name": "Freiluftkino: Goodbye, Lenin! (2003)",
-      "start": "2026-09-02T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
-      "name": "Mainzer Weinmarkt (2. Wochenende)",
-      "start": "2026-09-03T15:00:00",
-      "venue": "Stadtpark & Volkspark",
-      "city": "Mainz",
-      "cat": "Weinfest"
-    },
-    {
-      "name": "Freiluftkino: Flee (2021, OmU)",
-      "start": "2026-09-03T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
-      "name": "Freiluftkino: Porco Rosso (1992, dt. Fassung)",
-      "start": "2026-09-04T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
-      "name": "Wein-Wochenende",
-      "start": "2026-09-05T11:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Wein-Event"
-    },
-    {
-      "name": "KaffeeKlatsch | WinzerCafé im Weingut Jürgen Bernhard",
-      "start": "2026-09-05T14:30:00",
-      "venue": "",
-      "city": "",
-      "cat": "Wein-Event"
-    },
-    {
-      "name": "Freiluftkino: Palästina 36 (2025, OmU)",
-      "start": "2026-09-05T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
-    },
-    {
-      "name": "Freiluftkino: Before Sunrise (1995, OmU)",
-      "start": "2026-09-06T20:00:00",
-      "venue": "Innenhof Landesmuseum Mainz",
-      "city": "Mainz",
-      "cat": "Open-Air-Kino",
-      "desc": "FILMZ „Filmnächte unter Sternen“ im Innenhof des Landesmuseums · Einlass ab 19:00, Filmstart 20:00. Tickets 9€ / ermäßigt 7€ / Kinder 5€."
     },
     {
       "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
