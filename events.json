@@ -1,41 +1,20 @@
 {
-  "updated": "2026-10-12",
+  "updated": "2026-10-19",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
       "name": "Herbstfarben in der Vinothek Jakob Gerhardt",
-      "start": "2026-10-12T15:00:00",
+      "start": "2026-10-19T15:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinlounge"
     },
     {
       "name": "After Work Schobbe",
-      "start": "2026-10-14T18:00:00",
+      "start": "2026-10-21T18:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinlounge"
-    },
-    {
-      "name": "DämmerSchobbe",
-      "start": "2026-10-15T17:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "Katharinenmarkt in Oppenheim",
-      "start": "2026-10-17T13:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinmarkt"
-    },
-    {
-      "name": "Heitere Kostümführung | Rheinhessisches Rollenspiel mit Weinprobe",
-      "start": "2026-10-18T14:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinprobe"
     },
     {
       "name": "WineTime (Herbstweinprobe)",
@@ -43,6 +22,34 @@
       "venue": "",
       "city": "",
       "cat": "Weinprobe"
+    },
+    {
+      "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
+      "start": "2026-10-29T16:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinmarkt"
+    },
+    {
+      "name": "Winzerabend",
+      "start": "2026-10-30T18:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Wein- und Käseabend",
+      "start": "2026-10-31T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Dämmerschoppen zur Markteinstimmung",
+      "start": "2026-11-06T18:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinmarkt"
     }
   ]
 }
