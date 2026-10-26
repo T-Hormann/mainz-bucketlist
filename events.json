@@ -1,27 +1,13 @@
 {
-  "updated": "2026-10-19",
+  "updated": "2026-10-26",
   "source": "kuratiert + tourismus-rhein-selz.de (Feste & Winzer, keine Konzerte)",
   "events": [
     {
       "name": "Herbstfarben in der Vinothek Jakob Gerhardt",
-      "start": "2026-10-19T15:00:00",
+      "start": "2026-10-26T15:00:00",
       "venue": "",
       "city": "",
       "cat": "Weinlounge"
-    },
-    {
-      "name": "After Work Schobbe",
-      "start": "2026-10-21T18:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinlounge"
-    },
-    {
-      "name": "WineTime (Herbstweinprobe)",
-      "start": "2026-10-25T12:00:00",
-      "venue": "",
-      "city": "",
-      "cat": "Weinprobe"
     },
     {
       "name": "Wein- und Käsemarkt am Weingut Geheimrat Schnell",
@@ -50,6 +36,48 @@
       "venue": "",
       "city": "",
       "cat": "Weinmarkt"
+    },
+    {
+      "name": "KaffeeKlatsch | WinzerCafé im Weingut Jürgen Bernhard",
+      "start": "2026-11-07T14:30:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Rheinhessischer Käsemarkt",
+      "start": "2026-11-07T15:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinmarkt"
+    },
+    {
+      "name": "MÜHLENGLÜHEN im Weingut Klostermühlenhof",
+      "start": "2026-11-07T17:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
+    },
+    {
+      "name": "Guntersblumer Bauernmarkt",
+      "start": "2026-11-08T11:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Weinmarkt"
+    },
+    {
+      "name": "Lichterfest im Weinbaumuseum Oppenheim für Groß und Klein",
+      "start": "2026-11-08T11:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Stadt & Kultur"
+    },
+    {
+      "name": "Trilogie vom Spätburgunder im Weingut Krebs-Grode",
+      "start": "2026-11-13T15:00:00",
+      "venue": "",
+      "city": "",
+      "cat": "Wein-Event"
     }
   ]
 }
